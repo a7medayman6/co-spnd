@@ -1,10 +1,130 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Star, ArrowRight, Zap, Users, BarChart3, Scale, Check } from 'lucide-react'
+import { Star, ArrowRight, Zap, Users, BarChart3, Scale, Check, TrendingUp, Utensils, Car, ShoppingBag } from 'lucide-react'
 import { Logo } from '../../components/ui/Logo'
 import { Button } from '../../components/ui/Button'
 import { useAuth } from '../../hooks/useAuth'
-import heroImage from '../../assets/hero.png'
+
+const categories = [
+  { label: 'Food', icon: <Utensils size={12} />, bar: 72, amount: '€312' },
+  { label: 'Transport', icon: <Car size={12} />, bar: 44, amount: '€190' },
+  { label: 'Shopping', icon: <ShoppingBag size={12} />, bar: 28, amount: '€121' },
+]
+
+const transactions = [
+  { desc: 'Dinner at Tasca do Chico', category: 'Food', who: 'Ahmed', amount: '€42.00' },
+  { desc: 'Metro day cards', category: 'Transport', who: 'Sara', amount: '€12.50' },
+  { desc: 'Airbnb — night 2', category: 'Accommodation', who: 'Ahmed', amount: '€110.00' },
+  { desc: 'Pastéis de Belém', category: 'Food', who: 'Mona', amount: '€8.80' },
+]
+
+function AppPreview() {
+  return (
+    <div className="bg-white rounded-3xl border border-[#EDE9E1] shadow-2xl shadow-black/5 overflow-hidden">
+      {/* Mock browser chrome */}
+      <div className="bg-[#F9F8F5] border-b border-[#EDE9E1] px-4 py-3 flex items-center gap-2.5">
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-[#EDE9E1]" />
+          <div className="w-3 h-3 rounded-full bg-[#EDE9E1]" />
+          <div className="w-3 h-3 rounded-full bg-[#EDE9E1]" />
+        </div>
+        <div className="flex-1 bg-white border border-[#EDE9E1] rounded-lg px-3 py-1 text-[11px] text-[#B5ADA4] font-medium text-center max-w-xs mx-auto">
+          app.co-spnd.com
+        </div>
+      </div>
+
+      {/* Mock app content */}
+      <div className="grid grid-cols-1 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-[#EDE9E1]">
+
+        {/* Left panel — analytics summary */}
+        <div className="sm:col-span-2 p-6 bg-[#F9F8F5]">
+          <p className="text-[11px] font-semibold text-[#B5ADA4] uppercase tracking-widest mb-5">
+            Trip to Lisbon
+          </p>
+
+          {/* Total card */}
+          <div className="bg-white rounded-2xl border border-[#EDE9E1] p-4 mb-4 shadow-sm">
+            <p className="text-[11px] text-[#B5ADA4] font-medium mb-1">Total spent</p>
+            <p className="font-mono text-2xl font-bold tracking-tight">€623.30</p>
+            <div className="flex items-center gap-1 mt-2 text-emerald-500 text-xs font-semibold">
+              <TrendingUp size={12} />
+              <span>3 members · 12 transactions</span>
+            </div>
+          </div>
+
+          {/* Category bars */}
+          <div className="bg-white rounded-2xl border border-[#EDE9E1] p-4 shadow-sm">
+            <p className="text-[11px] text-[#B5ADA4] font-medium mb-3">By category</p>
+            <div className="space-y-3">
+              {categories.map((c) => (
+                <div key={c.label}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5 text-[12px] font-medium text-[#0E0C0A]">
+                      <span className="text-[#8C8479]">{c.icon}</span>
+                      {c.label}
+                    </div>
+                    <span className="font-mono text-[12px] font-medium text-[#8C8479]">{c.amount}</span>
+                  </div>
+                  <div className="h-1.5 bg-[#F9F8F5] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#0E0C0A] rounded-full"
+                      style={{ width: `${c.bar}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right panel — transaction list */}
+        <div className="sm:col-span-3 p-6">
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-[11px] font-semibold text-[#B5ADA4] uppercase tracking-widest">
+              Recent
+            </p>
+            <div className="bg-[#0E0C0A] text-white text-[11px] font-semibold px-3 py-1 rounded-full">
+              + Add
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {transactions.map((tx) => (
+              <div
+                key={tx.desc}
+                className="flex items-center justify-between px-4 py-3 rounded-2xl border border-[#EDE9E1] hover:bg-[#F9F8F5] transition-colors"
+              >
+                <div className="min-w-0 mr-4">
+                  <p className="text-[13px] font-semibold truncate">{tx.desc}</p>
+                  <p className="text-[11px] text-[#B5ADA4] mt-0.5">
+                    {tx.category} · {tx.who}
+                  </p>
+                </div>
+                <span className="font-mono text-sm font-medium whitespace-nowrap">{tx.amount}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Member avatars row */}
+          <div className="mt-6 pt-4 border-t border-[#EDE9E1] flex items-center gap-3">
+            <div className="flex -space-x-2">
+              {['A', 'S', 'M'].map((initial, i) => (
+                <div
+                  key={i}
+                  className="w-7 h-7 rounded-full bg-[#EDE9E1] border-2 border-white flex items-center justify-center text-[10px] font-bold text-[#8C8479]"
+                >
+                  {initial}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-[#B5ADA4] font-medium">Ahmed, Sara, Mona</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
 
 export function LandingPage() {
   const { user } = useAuth()
@@ -84,13 +204,7 @@ export function LandingPage() {
 
       {/* ── App Preview ────────────────────────────────────── */}
       <section className="max-w-4xl mx-auto px-6 pb-20">
-        <div className="bg-white rounded-3xl border border-[#EDE9E1] shadow-2xl shadow-black/5 overflow-hidden">
-          <img
-            src={heroImage}
-            alt="Co-Spnd app interface showing shared expenses and analytics"
-            className="w-full object-cover"
-          />
-        </div>
+        <AppPreview />
       </section>
 
       {/* ── Features ───────────────────────────────────────── */}
