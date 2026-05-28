@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Receipt, Download } from 'lucide-react'
+import { Plus, Trash2, Pencil, Receipt, Download, ChevronLeft, ChevronRight } from 'lucide-react'
 import { transactionsService } from '../../services/transactions.service'
 import { workspacesService } from '../../services/workspaces.service'
+import { analyticsService } from '../../services/analytics.service'
 import { exportTransactionsToCsv } from '../../utils/csv'
+import { getBudget } from '../../utils/budget'
 import { useAuth } from '../../hooks/useAuth'
 import type { Transaction, Workspace, UpdateTransactionDto } from '../../types'
 import { CATEGORIES } from '../../types'
-import { formatCurrency, formatDate, toInputDateValue } from '../../utils/date'
+import { formatCurrency, formatDate, toInputDateValue, getMonthRange, getMonthLabel } from '../../utils/date'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -15,6 +17,35 @@ import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { AddTransactionSheet } from './AddTransactionSheet'
+
+function BudgetBar({ spent, budget, currency }: { spent: number; budget: number; currency: string }) {
+  const pct = Math.min((spent / budget) * 100, 100)
+  const over = spent > budget
+
+  let barColor = 'bg-emerald-500'
+  if (pct >= 100) barColor = 'bg-red-500'
+  else if (pct >= 80) barColor = 'bg-orange-400'
+  else if (pct >= 50) barColor = 'bg-amber-400'
+
+  return (
+    <div className="mt-3">
+      <div className="flex justify-between items-baseline mb-1.5">
+        <span className="text-xs font-medium text-gray-400">
+          {over ? 'Over budget' : `${Math.round(pct)}% of budget`}
+        </span>
+        <span className="text-xs font-medium text-gray-400">
+          {formatCurrency(budget, currency)}
+        </span>
+      </div>
+      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-700 ${barColor}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
 
 export function TransactionsPage() {
   const { workspaceId } = useParams<{ workspaceId: string }>()
@@ -28,23 +59,70 @@ export function TransactionsPage() {
   const [editLoading, setEditLoading] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [monthOffset, setMonthOffset] = useState(0)
+  const [deltaPercent, setDeltaPercent] = useState<number | null | undefined>(undefined)
+  const [budget, setBudget] = useState<number | null>(null)
+
+  const selectedDate = new Date()
+  selectedDate.setMonth(selectedDate.getMonth() + monthOffset)
+  const { from, to } = getMonthRange(selectedDate)
+  const monthLabel = getMonthLabel(selectedDate)
+  const isCurrentMonth = monthOffset === 0
 
   const load = useCallback(async () => {
     if (!workspaceId) return
     const [txs, wsList] = await Promise.all([
-      transactionsService.list(workspaceId),
+      transactionsService.list(workspaceId, from, to),
       workspacesService.list(),
     ])
     setTransactions(txs)
-    setWorkspace(wsList.find((w) => w.id === workspaceId) ?? null)
-  }, [workspaceId])
+    const ws = wsList.find((w) => w.id === workspaceId) ?? null
+    setWorkspace(ws)
+    setBudget(ws ? getBudget(workspaceId) : null)
+  }, [workspaceId, from, to])
+
+  const loadComparison = useCallback(async () => {
+    if (!workspaceId || !isCurrentMonth) {
+      setDeltaPercent(undefined)
+      return
+    }
+    try {
+      const prevDate = new Date()
+      prevDate.setMonth(prevDate.getMonth() - 1)
+      const { from: pFrom, to: pTo } = getMonthRange(prevDate)
+      const [currAnalytics, prevAnalytics] = await Promise.all([
+        analyticsService.get(workspaceId, from, to),
+        analyticsService.get(workspaceId, pFrom, pTo),
+      ])
+      if (prevAnalytics.total === 0) {
+        setDeltaPercent(null)
+      } else {
+        setDeltaPercent(
+          ((currAnalytics.total - prevAnalytics.total) / prevAnalytics.total) * 100
+        )
+      }
+    } catch {
+      setDeltaPercent(undefined)
+    }
+  }, [workspaceId, from, to, isCurrentMonth])
 
   useEffect(() => {
+    setIsLoading(true)
     load().finally(() => setIsLoading(false))
   }, [load])
 
+  useEffect(() => {
+    loadComparison()
+  }, [loadComparison])
+
   function handleAdded(tx: Transaction) {
-    setTransactions((prev) => [tx, ...prev])
+    // Only add to the list if it falls within the current viewed month
+    const txDate = new Date(tx.date)
+    const viewStart = new Date(from)
+    const viewEnd = new Date(to)
+    if (txDate >= viewStart && txDate <= viewEnd) {
+      setTransactions((prev) => [tx, ...prev])
+    }
   }
 
   function openEdit(tx: Transaction) {
@@ -86,19 +164,30 @@ export function TransactionsPage() {
   }
 
   function handleExport() {
-    const today = new Date().toISOString().slice(0, 10)
     const safeName = (workspace?.name ?? 'workspace').replace(/\s+/g, '-')
-    const filename = `co-spnd-${safeName}-${today}.csv`
+    const filename = `co-spnd-${safeName}-${from}.csv`
     exportTransactionsToCsv(transactions, workspace?.currency ?? 'USD', filename)
   }
 
   const total = transactions.reduce((sum, t) => sum + t.amount, 0)
   const currency = workspace?.currency ?? 'USD'
 
+  const deltaLabel = (() => {
+    if (deltaPercent === undefined || deltaPercent === null) return null
+    const abs = Math.abs(deltaPercent)
+    const sign = deltaPercent > 0 ? '+' : '-'
+    const color = deltaPercent > 0 ? 'text-red-500' : 'text-emerald-600'
+    return (
+      <span className={`text-xs font-semibold ${color}`}>
+        {sign}{abs.toFixed(1)}% vs last month
+      </span>
+    )
+  })()
+
   return (
     <div className="min-h-screen bg-surface">
       {/* Header */}
-      <div className="px-5 pt-12 lg:pt-10 pb-5 flex items-start justify-between">
+      <div className="px-5 pt-12 lg:pt-10 pb-4 flex items-start justify-between">
         <div>
           <p className="text-xs font-bold tracking-[0.12em] uppercase text-[#B5ADA4]">
             {workspace?.name ?? '···'}
@@ -107,12 +196,18 @@ export function TransactionsPage() {
             Expenses
           </h1>
           {transactions.length > 0 && (
-            <p className="mt-1 text-sm text-[#8C8479]">
-              Total:{' '}
-              <span className="font-money font-semibold text-[#0E0C0A]">
-                {formatCurrency(total, currency)}
-              </span>
-            </p>
+            <div className="mt-1">
+              <p className="text-sm text-[#8C8479]">
+                Total:{' '}
+                <span className="font-money font-semibold text-[#0E0C0A]">
+                  {formatCurrency(total, currency)}
+                </span>
+              </p>
+              {deltaLabel && <div className="mt-0.5">{deltaLabel}</div>}
+              {budget !== null && (
+                <BudgetBar spent={total} budget={budget} currency={currency} />
+              )}
+            </div>
           )}
         </div>
         <button
@@ -125,6 +220,28 @@ export function TransactionsPage() {
         </button>
       </div>
 
+      {/* Month navigation */}
+      <div className="px-5 mb-4">
+        <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-[0_1px_4px_rgba(0,0,0,0.06)] px-4 py-3">
+          <button
+            onClick={() => setMonthOffset((o) => o - 1)}
+            className="p-1.5 -ml-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span className="text-[15px] font-semibold text-gray-950 tracking-tight">
+            {monthLabel}
+          </span>
+          <button
+            onClick={() => setMonthOffset((o) => o + 1)}
+            disabled={monthOffset >= 0}
+            className="p-1.5 -mr-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </div>
+
       {/* List */}
       <div className="px-5">
         {isLoading ? (
@@ -135,7 +252,7 @@ export function TransactionsPage() {
           <EmptyState
             icon={<Receipt size={48} />}
             title="No expenses yet"
-            description="Tap + to log your first expense."
+            description={isCurrentMonth ? 'Tap + to log your first expense.' : 'No expenses recorded for this month.'}
           />
         ) : (
           <div className="flex flex-col gap-2">
