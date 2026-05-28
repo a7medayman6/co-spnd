@@ -61,6 +61,11 @@ export function AppLayout() {
 
       {/* Main content */}
       <main className="flex-1 lg:pl-56 min-h-screen pb-24 lg:pb-0">
+        {/* Mobile-only top bar */}
+        <div className="lg:hidden flex items-center px-5 pt-5 pb-1">
+          <Logo size="sm" />
+        </div>
+
         <div className="max-w-lg mx-auto lg:max-w-2xl min-h-screen">
           <Outlet />
         </div>
