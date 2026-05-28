@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ChevronDown, ChevronUp, Clipboard, X, AlertTriangle, Sparkles } from 'lucide-react'
 import { transactionsService } from '../../services/transactions.service'
 import { workspacesService } from '../../services/workspaces.service'
 import { useAuth } from '../../hooks/useAuth'
@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { toInputDateValue } from '../../utils/date'
+import { parseMessage, getParserKeywords } from '../../utils/messageParser'
 
 interface AddTransactionSheetProps {
   isOpen: boolean
@@ -36,12 +37,62 @@ export function AddTransactionSheet({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // paste-to-fill state
+  const [parsedFrom, setParsedFrom] = useState(false)
+  const [isCreditWarning, setIsCreditWarning] = useState(false)
+  const [showPasteArea, setShowPasteArea] = useState(false)
+  const [pasteText, setPasteText] = useState('')
+  const pasteRef = useRef<HTMLTextAreaElement>(null)
+
   useEffect(() => {
     if (isOpen && user) {
       setSpenderId(user.id)
       workspacesService.getMembers(workspaceId).then(setMembers).catch(() => {})
     }
   }, [isOpen, workspaceId, user])
+
+  useEffect(() => {
+    if (showPasteArea) {
+      setTimeout(() => pasteRef.current?.focus(), 50)
+    }
+  }, [showPasteArea])
+
+  function applyParsed(text: string) {
+    if (!text.trim()) return
+    const result = parseMessage(text, getParserKeywords())
+    if (result.amount !== null) setAmount(result.amount.toString())
+    setCategory(result.category)
+    if (result.description) setDescription(result.description)
+    setDate(result.date)
+    setParsedFrom(true)
+    setIsCreditWarning(result.isCredit)
+    setShowPasteArea(false)
+    setPasteText('')
+    if (result.amount === null) setError('Could not detect an amount. Please enter it manually.')
+  }
+
+  async function handleClipboardPaste() {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (text.trim()) {
+        applyParsed(text)
+      } else {
+        setShowPasteArea(true)
+      }
+    } catch {
+      // Permission denied or API unavailable — fall back to manual textarea
+      setShowPasteArea(true)
+    }
+  }
+
+  function clearParsed() {
+    setParsedFrom(false)
+    setIsCreditWarning(false)
+    setAmount('')
+    setCategory(CATEGORIES[0])
+    setDescription('')
+    setDate(toInputDateValue())
+  }
 
   function reset() {
     setAmount('')
@@ -51,6 +102,10 @@ export function AddTransactionSheet({
     setSpenderId(user?.id ?? '')
     setShowMore(false)
     setError('')
+    setParsedFrom(false)
+    setIsCreditWarning(false)
+    setShowPasteArea(false)
+    setPasteText('')
   }
 
   function handleClose() {
@@ -83,12 +138,13 @@ export function AddTransactionSheet({
     }
   }
 
-  // Currency symbol for display
   const currencySymbol = (() => {
     try {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency })
-        .formatToParts(0)
-        .find((p) => p.type === 'currency')?.value ?? currency
+      return (
+        new Intl.NumberFormat('en-US', { style: 'currency', currency })
+          .formatToParts(0)
+          .find((p) => p.type === 'currency')?.value ?? currency
+      )
     } catch {
       return currency
     }
@@ -97,7 +153,76 @@ export function AddTransactionSheet({
   return (
     <BottomSheet isOpen={isOpen} onClose={handleClose} title="Add expense">
       <div className="flex flex-col gap-5">
-        {/* Amount — hero input */}
+
+        {/* ── Paste-to-fill zone ─────────────────────────────────────── */}
+        {!parsedFrom && !showPasteArea && (
+          <button
+            type="button"
+            onClick={handleClipboardPaste}
+            className="flex items-center gap-2.5 w-full px-4 py-3 bg-[#F3F0FF] border border-[#DDD5FF] rounded-2xl text-left hover:bg-[#EBE5FF] transition-colors active:scale-[0.98]"
+          >
+            <Clipboard size={16} className="text-[#863bff] shrink-0" />
+            <span className="text-sm font-semibold text-[#863bff]">Paste a bank message to auto-fill</span>
+          </button>
+        )}
+
+        {/* Paste textarea fallback */}
+        {showPasteArea && (
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold tracking-[0.12em] uppercase text-gray-400">
+              Paste your message
+            </label>
+            <textarea
+              ref={pasteRef}
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+              placeholder={'e.g. "Your account was debited EGP 245.50 at Costa Coffee on 28-May-2026"'}
+              rows={4}
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm text-gray-800 outline-none focus:border-[#863bff] focus:ring-2 focus:ring-[#F3F0FF] transition-all resize-none leading-relaxed"
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => { setShowPasteArea(false); setPasteText('') }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <button
+                type="button"
+                onClick={() => applyParsed(pasteText)}
+                disabled={!pasteText.trim()}
+                className="flex-1 py-2 px-4 bg-[#863bff] text-white text-sm font-semibold rounded-xl disabled:opacity-40 hover:bg-[#7333e0] transition-colors active:scale-95"
+              >
+                Fill fields
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Parsed badge */}
+        {parsedFrom && (
+          <div className="flex items-start gap-2.5 px-4 py-3 bg-[#F3F0FF] border border-[#DDD5FF] rounded-2xl">
+            <Sparkles size={15} className="text-[#863bff] shrink-0 mt-0.5" />
+            <p className="text-sm text-[#5A3DB5] font-medium flex-1">Fields filled from message — review before saving.</p>
+            <button onClick={clearParsed} className="text-[#863bff] hover:text-[#5A3DB5] transition-colors shrink-0">
+              <X size={15} />
+            </button>
+          </div>
+        )}
+
+        {/* Credit warning */}
+        {isCreditWarning && (
+          <div className="flex items-start gap-2.5 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl">
+            <AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-700 font-medium">
+              This looks like a credit or refund. Log it anyway?
+            </p>
+          </div>
+        )}
+
+        {/* ── Amount ─────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-bold tracking-[0.12em] uppercase text-gray-400">
             Amount
@@ -117,7 +242,7 @@ export function AddTransactionSheet({
           </div>
         </div>
 
-        {/* Category chips */}
+        {/* ── Category chips ──────────────────────────────────────────── */}
         <div className="flex flex-col gap-2">
           <label className="text-xs font-bold tracking-[0.12em] uppercase text-gray-400">
             Category
@@ -140,7 +265,7 @@ export function AddTransactionSheet({
           </div>
         </div>
 
-        {/* More details accordion */}
+        {/* ── More details ────────────────────────────────────────────── */}
         <button
           type="button"
           onClick={() => setShowMore(!showMore)}
