@@ -1,36 +1,71 @@
-# Co-Spnd
+<div align="center">
+  <img src="docs/logo.svg" width="64" alt="Co-Spnd logo" />
+  <h1><a href="https://co-spnd-web.vercel.app/">Co-Spnd</a></h1>
+  <p>Minimalist shared expense tracking for groups</p>
 
-A minimalist shared finance app for tracking group expenses. Built for couples, roommates, and travel groups who want fast, low-friction expense logging with clear analytics — no bloat, no noise.
+  🌐 **[Live App](https://co-spnd-web.vercel.app/)**
+
+  [![GitHub stars](https://img.shields.io/github/stars/a7medayman6/co-spnd?style=flat-square&logo=github&color=863bff)](https://github.com/a7medayman6/co-spnd/stargazers)
+  [![GitHub forks](https://img.shields.io/github/forks/a7medayman6/co-spnd?style=flat-square&logo=github&color=863bff)](https://github.com/a7medayman6/co-spnd/network)
+  [![GitHub issues](https://img.shields.io/github/issues/a7medayman6/co-spnd?style=flat-square&color=863bff)](https://github.com/a7medayman6/co-spnd/issues)
+  [![GitHub last commit](https://img.shields.io/github/last-commit/a7medayman6/co-spnd?style=flat-square&color=863bff)](https://github.com/a7medayman6/co-spnd/commits/main)
+
+  If you find Co-Spnd useful, consider [⭐ starring the repo](https://github.com/a7medayman6/co-spnd) — it helps a lot.
+</div>
+
+---
+
+## What Is Co-Spnd?
+
+Co-Spnd is a minimalist shared finance app for tracking group expenses. Built for couples, roommates, and travel groups who want fast, low-friction expense logging with clear analytics — no bloat, no noise.
+
+Create a workspace, invite your group, and start logging. See who spent what, where the money went, and how this month compares to last — all in a clean, mobile-first interface that stays out of your way.
+
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/onboarding.png" width="200" alt="Onboarding" /><br/><sub>Onboarding</sub></td>
+    <td align="center"><img src="docs/screenshots/login.png" width="200" alt="Login" /><br/><sub>Login</sub></td>
+    <td align="center"><img src="docs/screenshots/workspaces.png" width="200" alt="Workspaces" /><br/><sub>Workspaces</sub></td>
+    <td align="center"><img src="docs/screenshots/new-workspace.png" width="200" alt="New Workspace" /><br/><sub>Create Workspace</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/transactions-empty.png" width="200" alt="Transactions" /><br/><sub>Transactions</sub></td>
+    <td align="center"><img src="docs/screenshots/add-expense.png" width="200" alt="Add Expense" /><br/><sub>Add Expense</sub></td>
+    <td align="center"><img src="docs/screenshots/analytics.png" width="200" alt="Analytics" /><br/><sub>Analytics</sub></td>
+    <td align="center"><img src="docs/screenshots/members.png" width="200" alt="Members" /><br/><sub>Members</sub></td>
+  </tr>
+</table>
 
 ---
 
 ## Product
 
-### What It Does
+### Core Flows
 
-Co-Spnd lets a group of people share a **workspace** where they log expenses together. Each workspace has its own currency and member list. Transactions are scoped to a workspace and attributed to whoever actually paid.
-
-**Core flows:**
-
-- Create or join a workspace
-- Log transactions in seconds (amount + category is all you need)
+- Create or join a workspace with a shared currency
+- Log transactions in seconds — amount and category are all you need
 - View the group's spending breakdown by category, by person, and over time
 - Compare this month's spending to last month
+- Invite members by email
 
 ### Design Philosophy
 
-The app is intentionally small. Every screen exists to serve a clear purpose:
+The app is intentionally small. Every screen has a single clear purpose:
 
-- **Transactions page** — the home base; log and browse expenses
-- **Analytics page** — understand where the money went
-- **Workspaces page** — manage groups and members
-- **Profile page** — account settings
+- **Transactions** — the home base; log and browse expenses
+- **Analytics** — understand where the money went
+- **Workspaces** — manage groups and members
+- **Profile** — account settings
 
-The transaction entry experience is the highest-priority UX surface. It's optimized for one-hand mobile use: amount and category up front, everything else tucked behind an optional section.
+The transaction entry experience is the highest-priority UX surface. Amount and category are front and center; description, date, and spender are tucked behind an optional section. Optimized for one-hand mobile use.
 
-### What's Out of Scope
+### Out of Scope
 
-The following features are intentionally excluded from the MVP:
+Intentionally excluded from the MVP:
 
 - Budgets and savings goals
 - Notifications or reminders
@@ -49,11 +84,13 @@ co-spnd/
 ├── co-spnd-api/     # NestJS + MongoDB REST API
 ├── co-spnd-web/     # React + Vite + Tailwind frontend
 └── docs/
-    ├── api-contract.md     # Authoritative API spec
-    └── system-prompt.md    # Frontend build prompt
+    ├── api-contract.md       # Authoritative API spec
+    ├── system-prompt.md      # Frontend build prompt
+    ├── logo.svg
+    └── screenshots/
 ```
 
-Both apps are deployed independently on Vercel. The monorepo root holds shared docs and configuration only — there is no shared package or workspace tooling.
+Both apps are deployed independently on Vercel. The monorepo root holds shared docs and configuration only — no shared packages or workspace tooling.
 
 ---
 
@@ -110,8 +147,6 @@ co-spnd-web/src/
 
 ### Environment Variables
 
-Create `co-spnd-web/.env` from the example:
-
 ```bash
 cp co-spnd-web/.env.example co-spnd-web/.env
 ```
@@ -119,8 +154,6 @@ cp co-spnd-web/.env.example co-spnd-web/.env
 | Variable | Description |
 |---|---|
 | `VITE_API_URL` | Full base URL of the API including `/api/v1` |
-
-Example:
 
 ```
 VITE_API_URL=http://localhost:3000/api/v1
@@ -131,28 +164,25 @@ VITE_API_URL=http://localhost:3000/api/v1
 ```bash
 cd co-spnd-web
 npm install
-npm run dev
+npm run dev       # http://localhost:5173
 ```
-
-App runs at `http://localhost:5173`.
 
 ### Building
 
 ```bash
-npm run build      # outputs to co-spnd-web/dist/
-npm run preview    # serve the built output locally
+npm run build     # outputs to co-spnd-web/dist/
+npm run preview   # serve the built output locally
 ```
 
 ### Vercel Deployment
 
-In the Vercel project settings, set:
+In the Vercel project settings:
 
 - **Root Directory:** `co-spnd-web`
 - **Build Command:** `npm run build`
 - **Output Directory:** `dist`
-- **Install Command:** `npm install`
 
-The `vercel.json` in `co-spnd-web/` handles SPA routing (all paths → `index.html`).
+The `vercel.json` inside `co-spnd-web/` handles SPA routing (all paths → `index.html`).
 
 ---
 
@@ -182,8 +212,6 @@ co-spnd-api/src/
 
 ### Environment Variables
 
-Create `co-spnd-api/.env` from the example:
-
 ```bash
 cp co-spnd-api/.env.example co-spnd-api/.env
 ```
@@ -193,8 +221,6 @@ cp co-spnd-api/.env.example co-spnd-api/.env
 | `MONGODB_URI` | MongoDB connection string |
 | `JWT_SECRET` | Secret used to sign JWT tokens |
 | `PORT` | Port for local dev server (default: `3000`) |
-
-Example:
 
 ```
 MONGODB_URI=mongodb://localhost:27017/co-spnd
@@ -207,15 +233,13 @@ PORT=3000
 ```bash
 cd co-spnd-api
 npm install
-npm run start:dev    # watch mode
+npm run start:dev    # watch mode — http://localhost:3000
 ```
-
-API runs at `http://localhost:3000`.
 
 ### Building
 
 ```bash
-npm run build    # compiles to co-spnd-api/dist/
+npm run build        # compiles to co-spnd-api/dist/
 npm run start:prod
 ```
 
@@ -229,13 +253,12 @@ npm run test:cov      # coverage report
 
 ### Vercel Deployment
 
-In the Vercel project settings, set:
+In the Vercel project settings:
 
 - **Root Directory:** `co-spnd-api`
 - **Build Command:** `npm run build`
-- **Install Command:** `npm install`
 
-The `vercel.json` in `co-spnd-api/` routes all requests to `src/vercel.ts`.
+The `vercel.json` inside `co-spnd-api/` routes all requests to `src/vercel.ts`.
 
 ---
 
@@ -291,7 +314,7 @@ Transaction fields: `amount` (required), `category` (required), `description`, `
 | GET | `/workspaces/:id/analytics/comparison` | Current month-to-date vs previous full month |
 | GET | `/workspaces/:id/analytics/category-trends` | Top 3 categories by month (`?from=&to=`) |
 
-Full request/response shapes are documented in [`docs/api-contract.md`](docs/api-contract.md).
+Full request/response shapes: [`docs/api-contract.md`](docs/api-contract.md).
 
 ---
 
@@ -304,7 +327,7 @@ Full request/response shapes are documented in [`docs/api-contract.md`](docs/api
 
 ---
 
-## Local Development (Both Apps)
+## Local Development
 
 ```bash
 # Terminal 1 — API
