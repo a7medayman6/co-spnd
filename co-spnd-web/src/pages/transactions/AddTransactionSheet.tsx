@@ -112,7 +112,6 @@ export function AddTransactionSheet({
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              autoFocus
               className="flex-1 px-2 py-4 text-4xl font-money font-semibold text-gray-950 bg-transparent outline-none placeholder-gray-200 min-w-0"
             />
           </div>
