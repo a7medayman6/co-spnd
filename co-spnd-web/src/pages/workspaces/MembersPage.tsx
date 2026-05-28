@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { UserPlus, Users, CheckCircle2 } from 'lucide-react'
+import { UserPlus, Users, CheckCircle2, Wallet } from 'lucide-react'
 import { workspacesService } from '../../services/workspaces.service'
 import { analyticsService } from '../../services/analytics.service'
 import { useAuth } from '../../hooks/useAuth'
 import type { WorkspaceMember, SplitEntry, BalanceEntry, Analytics } from '../../types'
 import { formatCurrency, getMonthRange } from '../../utils/date'
+import { getBudget, setBudget, clearBudget } from '../../utils/budget'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
@@ -35,6 +36,10 @@ export function MembersPage() {
   const [inviteError, setInviteError] = useState('')
   const [inviteSuccess, setInviteSuccess] = useState(false)
 
+  const [budget, setBudgetState] = useState<number | null>(null)
+  const [showBudget, setShowBudget] = useState(false)
+  const [budgetInput, setBudgetInput] = useState('')
+
   const load = useCallback(async () => {
     if (!workspaceId) return
     setIsError(false)
@@ -61,6 +66,35 @@ export function MembersPage() {
   useEffect(() => {
     load().finally(() => setIsLoading(false))
   }, [load])
+
+  useEffect(() => {
+    if (workspaceId) setBudgetState(getBudget(workspaceId))
+  }, [workspaceId])
+
+  function openBudgetModal() {
+    setBudgetInput(budget !== null ? budget.toString() : '')
+    setShowBudget(true)
+  }
+
+  function saveBudget() {
+    if (!workspaceId) return
+    const val = parseFloat(budgetInput)
+    if (!budgetInput.trim() || isNaN(val) || val <= 0) {
+      clearBudget(workspaceId)
+      setBudgetState(null)
+    } else {
+      setBudget(workspaceId, val)
+      setBudgetState(val)
+    }
+    setShowBudget(false)
+  }
+
+  function removeBudget() {
+    if (!workspaceId) return
+    clearBudget(workspaceId)
+    setBudgetState(null)
+    setShowBudget(false)
+  }
 
   const total = analytics?.total ?? 0
 
@@ -299,6 +333,60 @@ export function MembersPage() {
           </div>
         )}
       </div>
+
+      {/* Budget section */}
+      <div className="px-5 mt-6 mb-6">
+        <p className="text-xs font-bold tracking-[0.12em] uppercase text-gray-400 mb-3">
+          Settings
+        </p>
+        <button
+          onClick={openBudgetModal}
+          className="w-full bg-white rounded-2xl border border-gray-100 shadow-[0_1px_4px_rgba(0,0,0,0.06)] px-4 py-3.5 flex items-center gap-3 text-left hover:bg-gray-50 transition-colors"
+        >
+          <div className="w-10 h-10 rounded-full bg-[#F3F0FF] flex items-center justify-center shrink-0">
+            <Wallet size={18} className="text-[#863bff]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-950 text-[15px]">Monthly budget</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {budget !== null ? formatCurrency(budget, currency) : 'Not set'}
+            </p>
+          </div>
+          <span className="text-xs font-medium text-[#863bff] shrink-0">
+            {budget !== null ? 'Edit' : 'Set'}
+          </span>
+        </button>
+      </div>
+
+      {/* Budget modal */}
+      <Modal isOpen={showBudget} onClose={() => setShowBudget(false)} title="Monthly budget">
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-gray-500 leading-relaxed">
+            Set a monthly spending target for this workspace. The progress bar on the expenses
+            page will show how close you are.
+          </p>
+          <Input
+            label="Budget amount"
+            type="number"
+            inputMode="decimal"
+            placeholder="e.g. 2000"
+            value={budgetInput}
+            onChange={(e) => setBudgetInput(e.target.value)}
+            autoFocus
+          />
+          <Button onClick={saveBudget} className="w-full" size="lg">
+            Save budget
+          </Button>
+          {budget !== null && (
+            <button
+              onClick={removeBudget}
+              className="text-sm text-red-500 font-medium text-center py-1 hover:text-red-600 transition-colors"
+            >
+              Remove budget
+            </button>
+          )}
+        </div>
+      </Modal>
 
       {/* Invite modal */}
       <Modal isOpen={showInvite} onClose={handleCloseInvite} title="Invite member">
