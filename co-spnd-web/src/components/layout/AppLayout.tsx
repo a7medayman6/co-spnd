@@ -61,9 +61,18 @@ export function AppLayout() {
 
       {/* Main content */}
       <main className="flex-1 lg:pl-56 min-h-screen pb-24 lg:pb-0">
-        {/* Mobile-only top bar */}
-        <div className="lg:hidden flex items-center px-5 pt-5 pb-1">
+        {/* Mobile-only sticky top bar */}
+        <div className="lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-[#EDE9E1] flex items-center justify-between px-5 h-14">
           <Logo size="sm" />
+          {workspaceId && (
+            <button
+              onClick={() => navigate('/workspaces')}
+              className="flex items-center gap-1.5 text-[13px] font-semibold text-[#8C8479] hover:text-[#0E0C0A] transition-colors"
+            >
+              <ChevronLeft size={15} strokeWidth={2.5} />
+              Workspaces
+            </button>
+          )}
         </div>
 
         <div className="max-w-lg mx-auto lg:max-w-2xl min-h-screen">

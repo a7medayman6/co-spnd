@@ -187,7 +187,7 @@ export function TransactionsPage() {
   return (
     <div className="min-h-screen bg-surface">
       {/* Header */}
-      <div className="px-5 pt-12 lg:pt-10 pb-4 flex items-start justify-between">
+      <div className="px-5 pt-5 lg:pt-10 pb-4 flex items-start justify-between">
         <div>
           <p className="text-xs font-bold tracking-[0.12em] uppercase text-[#B5ADA4]">
             {workspace?.name ?? '···'}

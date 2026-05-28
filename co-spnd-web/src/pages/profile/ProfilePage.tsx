@@ -44,7 +44,7 @@ export function ProfilePage() {
   return (
     <div className="min-h-screen bg-surface">
       {/* Header */}
-      <div className="px-5 pt-12 lg:pt-10 pb-6 flex items-start justify-between">
+      <div className="px-5 pt-5 lg:pt-10 pb-6 flex items-start justify-between">
         <div>
           <h1 className="text-[1.75rem] font-extrabold text-[#0E0C0A] tracking-tight">
             Profile

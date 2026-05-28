@@ -106,7 +106,7 @@ export function AnalyticsPage() {
   return (
     <div className="min-h-screen bg-surface">
       {/* Header */}
-      <div className="px-5 pt-12 lg:pt-10 pb-5">
+      <div className="px-5 pt-5 lg:pt-10 pb-5">
         <p className="text-xs font-bold tracking-[0.12em] uppercase text-[#B5ADA4]">
           {workspace?.name ?? '···'}
         </p>
