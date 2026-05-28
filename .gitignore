@@ -32,3 +32,5 @@ pnpm-debug.log*
 
 # NestJS build info
 *.tsbuildinfo
+
+.playwright-*/
