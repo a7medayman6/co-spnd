@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Receipt, Download, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Pencil, Receipt, Download, ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react'
 import { transactionsService } from '../../services/transactions.service'
 import { workspacesService } from '../../services/workspaces.service'
 import { analyticsService } from '../../services/analytics.service'
 import { exportTransactionsToCsv } from '../../utils/csv'
 import { getBudget } from '../../utils/budget'
 import { useAuth } from '../../hooks/useAuth'
-import type { Transaction, Workspace, UpdateTransactionDto } from '../../types'
+import type { Transaction, Workspace, WorkspaceMember, UpdateTransactionDto } from '../../types'
 import { CATEGORIES } from '../../types'
 import { formatCurrency, formatDate, toInputDateValue, getMonthRange, getMonthLabel } from '../../utils/date'
 import { Badge } from '../../components/ui/Badge'
@@ -52,6 +52,7 @@ export function TransactionsPage() {
   const { user } = useAuth()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
+  const [members, setMembers] = useState<WorkspaceMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [editTarget, setEditTarget] = useState<Transaction | null>(null)
@@ -62,6 +63,9 @@ export function TransactionsPage() {
   const [monthOffset, setMonthOffset] = useState(0)
   const [deltaPercent, setDeltaPercent] = useState<number | null | undefined>(undefined)
   const [budget, setBudget] = useState<number | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
+  const [filterCategory, setFilterCategory] = useState('')
+  const [filterSpenderId, setFilterSpenderId] = useState('')
 
   const selectedDate = new Date()
   selectedDate.setMonth(selectedDate.getMonth() + monthOffset)
@@ -71,11 +75,13 @@ export function TransactionsPage() {
 
   const load = useCallback(async () => {
     if (!workspaceId) return
-    const [txs, wsList] = await Promise.all([
+    const [txs, wsList, memberList] = await Promise.all([
       transactionsService.list(workspaceId, from, to),
       workspacesService.list(),
+      workspacesService.getMembers(workspaceId),
     ])
     setTransactions(txs)
+    setMembers(memberList)
     const ws = wsList.find((w) => w.id === workspaceId) ?? null
     setWorkspace(ws)
     setBudget(ws ? getBudget(workspaceId) : null)
@@ -132,6 +138,7 @@ export function TransactionsPage() {
       category: tx.category,
       description: tx.description ?? '',
       date: toInputDateValue(tx.date),
+      spenderId: tx.spenderId,
     })
   }
 
@@ -166,10 +173,18 @@ export function TransactionsPage() {
   function handleExport() {
     const safeName = (workspace?.name ?? 'workspace').replace(/\s+/g, '-')
     const filename = `co-spnd-${safeName}-${from}.csv`
-    exportTransactionsToCsv(transactions, workspace?.currency ?? 'USD', filename)
+    exportTransactionsToCsv(filteredTransactions, workspace?.currency ?? 'USD', filename)
   }
 
-  const total = transactions.reduce((sum, t) => sum + t.amount, 0)
+  const filteredTransactions = transactions.filter((t) => {
+    if (filterCategory && t.category !== filterCategory) return false
+    if (filterSpenderId && t.spenderId !== filterSpenderId) return false
+    return true
+  })
+
+  const activeFilterCount = (filterCategory ? 1 : 0) + (filterSpenderId ? 1 : 0)
+
+  const total = filteredTransactions.reduce((sum, t) => sum + t.amount, 0)
   const currency = workspace?.currency ?? 'USD'
 
   const deltaLabel = (() => {
@@ -210,14 +225,28 @@ export function TransactionsPage() {
             </div>
           )}
         </div>
-        <button
-          onClick={handleExport}
-          disabled={transactions.length === 0}
-          className="mt-4 p-1.5 text-[#B5ADA4] hover:text-[#8C8479] hover:bg-[#F2F0EB] rounded-xl transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          aria-label="Export CSV"
-        >
-          <Download size={18} />
-        </button>
+        <div className="flex items-center gap-1 mt-4">
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className={`relative p-1.5 rounded-xl transition-colors ${showFilters || activeFilterCount > 0 ? 'text-[#0E0C0A] bg-[#EDE9E1]' : 'text-[#B5ADA4] hover:text-[#8C8479] hover:bg-[#F2F0EB]'}`}
+            aria-label="Filters"
+          >
+            <SlidersHorizontal size={18} />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#0E0C0A] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={filteredTransactions.length === 0}
+            className="p-1.5 text-[#B5ADA4] hover:text-[#8C8479] hover:bg-[#F2F0EB] rounded-xl transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Export CSV"
+          >
+            <Download size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Month navigation */}
@@ -242,21 +271,74 @@ export function TransactionsPage() {
         </div>
       </div>
 
+      {/* Filters */}
+      {showFilters && (
+        <div className="px-5 mb-4">
+          <div className="bg-white rounded-2xl border border-[#EDE9E1] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold tracking-[0.1em] uppercase text-[#B5ADA4]">Filters</span>
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={() => { setFilterCategory(''); setFilterSpenderId('') }}
+                  className="flex items-center gap-1 text-xs font-semibold text-[#8C8479] hover:text-[#0E0C0A] transition-colors"
+                >
+                  <X size={12} /> Clear all
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-[#8C8479]">Category</label>
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#F9F8F5] border border-[#EDE9E1] rounded-xl text-[#0E0C0A] text-sm outline-none focus:border-gray-400 transition-all"
+                >
+                  <option value="">All</option>
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-[#8C8479]">Spender</label>
+                <select
+                  value={filterSpenderId}
+                  onChange={(e) => setFilterSpenderId(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#F9F8F5] border border-[#EDE9E1] rounded-xl text-[#0E0C0A] text-sm outline-none focus:border-gray-400 transition-all"
+                >
+                  <option value="">All</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* List */}
       <div className="px-5">
         {isLoading ? (
           <div className="flex justify-center py-24">
             <LoadingSpinner size="lg" />
           </div>
-        ) : transactions.length === 0 ? (
+        ) : filteredTransactions.length === 0 ? (
           <EmptyState
             icon={<Receipt size={48} />}
-            title="No expenses yet"
-            description={isCurrentMonth ? 'Tap + to log your first expense.' : 'No expenses recorded for this month.'}
+            title={activeFilterCount > 0 ? 'No matching expenses' : 'No expenses yet'}
+            description={
+              activeFilterCount > 0
+                ? 'Try adjusting your filters.'
+                : isCurrentMonth
+                ? 'Tap + to log your first expense.'
+                : 'No expenses recorded for this month.'
+            }
           />
         ) : (
           <div className="flex flex-col gap-2">
-            {transactions.map((tx) => {
+            {filteredTransactions.map((tx) => {
               const isOwner = tx.createdBy === user?.id
               return (
                 <div
@@ -273,7 +355,17 @@ export function TransactionsPage() {
                     {tx.description && (
                       <p className="text-sm text-gray-500 mt-0.5 truncate">{tx.description}</p>
                     )}
-                    <p className="text-xs text-gray-400 mt-0.5">{formatDate(tx.date)}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-xs text-gray-400">{formatDate(tx.date)}</p>
+                      {tx.spenderName && (
+                        <>
+                          <span className="text-gray-200">·</span>
+                          <p className="text-xs text-gray-400">
+                            Paid by <span className="font-medium text-gray-500">{tx.spenderName}</span>
+                          </p>
+                        </>
+                      )}
+                    </div>
                   </div>
                   {isOwner && (
                     <div className="flex items-center gap-1 shrink-0">
@@ -358,6 +450,22 @@ export function TransactionsPage() {
             value={editForm.date ?? ''}
             onChange={(e) => setEditForm((f) => ({ ...f, date: e.target.value }))}
           />
+          {members.length > 1 && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-gray-600 tracking-tight">Paid by</label>
+              <select
+                value={editForm.spenderId ?? ''}
+                onChange={(e) => setEditForm((f) => ({ ...f, spenderId: e.target.value }))}
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl text-gray-950 text-sm outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-150"
+              >
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}{m.id === user?.id ? ' (you)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <Button onClick={handleEdit} isLoading={editLoading} className="w-full" size="lg">
             Save changes
           </Button>
