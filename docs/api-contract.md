@@ -307,6 +307,7 @@ currency and by workspace.
     }
   ]
 }
+```
 
 ---
 

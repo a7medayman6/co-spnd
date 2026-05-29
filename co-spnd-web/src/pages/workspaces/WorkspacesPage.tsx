@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BarChart3, Plus, Users, LogOut, ChevronRight, Trash2 } from 'lucide-react'
+import { BarChart3, Plus, Users, LogOut, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 import { workspacesService } from '../../services/workspaces.service'
 import { analyticsService } from '../../services/analytics.service'
 import { useAuth } from '../../hooks/useAuth'
 import type { UserAnalytics, Workspace } from '../../types'
-import { formatCurrency } from '../../utils/date'
+import { formatCurrency, getMonthLabel, getMonthRange } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
@@ -15,32 +15,68 @@ import { Logo } from '../../components/ui/Logo'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'AED', 'EGP', 'SAR', 'CAD', 'AUD']
 
-function PersonalAnalytics({ analytics }: { analytics: UserAnalytics }) {
+interface PersonalAnalyticsProps {
+  analytics: UserAnalytics
+  monthLabel: string
+  monthOffset: number
+  onPreviousMonth: () => void
+  onNextMonth: () => void
+}
+
+function PersonalAnalytics({
+  analytics,
+  monthLabel,
+  monthOffset,
+  onPreviousMonth,
+  onNextMonth,
+}: PersonalAnalyticsProps) {
   const hasSpend = analytics.totalsByCurrency.some((item) => item.total > 0)
   const topCategories = analytics.byCategory.filter((item) => item.total > 0).slice(0, 4)
   const activeWorkspaces = analytics.byWorkspace.filter(
     (workspace) => workspace.userTotal > 0 || workspace.workspaceTotal > 0,
   )
 
-  if (!hasSpend && activeWorkspaces.length === 0) {
-    return null
-  }
-
   return (
-    <section className="mb-6 flex flex-col gap-3">
+    <section className="mt-7 pb-8 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-bold tracking-[0.12em] uppercase text-[#B5ADA4]">
             Your analytics
           </p>
           <h2 className="text-lg font-extrabold text-[#0E0C0A] tracking-tight">
-            All workspaces
+            {monthLabel}
           </h2>
         </div>
-        <div className="w-9 h-9 rounded-2xl bg-white border border-[#EDE9E1] flex items-center justify-center text-[#8C8479]">
-          <BarChart3 size={17} />
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onPreviousMonth}
+            className="w-9 h-9 rounded-2xl bg-white border border-[#EDE9E1] flex items-center justify-center text-[#8C8479] hover:text-[#0E0C0A] hover:bg-[#F9F8F5] transition-colors"
+            aria-label="Previous month"
+          >
+            <ChevronLeft size={17} />
+          </button>
+          <button
+            onClick={onNextMonth}
+            disabled={monthOffset >= 0}
+            className="w-9 h-9 rounded-2xl bg-white border border-[#EDE9E1] flex items-center justify-center text-[#8C8479] hover:text-[#0E0C0A] hover:bg-[#F9F8F5] transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
+            aria-label="Next month"
+          >
+            <ChevronRight size={17} />
+          </button>
         </div>
       </div>
+
+      {!hasSpend && activeWorkspaces.length === 0 && (
+        <div className="bg-white border border-[#EDE9E1] rounded-2xl px-4 py-6 shadow-[0_1px_3px_rgba(14,12,10,0.04)] text-center">
+          <div className="w-10 h-10 mx-auto rounded-2xl bg-[#F9F8F5] border border-[#EDE9E1] flex items-center justify-center text-[#B5ADA4] mb-3">
+            <BarChart3 size={18} />
+          </div>
+          <p className="text-sm font-semibold text-[#0E0C0A]">No spending this month</p>
+          <p className="text-xs text-[#8C8479] mt-1">
+            Add expenses or switch months to see your activity.
+          </p>
+        </div>
+      )}
 
       {hasSpend && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -164,6 +200,7 @@ export function WorkspacesPage() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [analytics, setAnalytics] = useState<UserAnalytics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [monthOffset, setMonthOffset] = useState(0)
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState('USD')
@@ -173,15 +210,25 @@ export function WorkspacesPage() {
   const [leaving, setLeaving] = useState(false)
   const [leaveError, setLeaveError] = useState('')
 
+  const currentDate = new Date()
+  currentDate.setMonth(currentDate.getMonth() + monthOffset)
+  const { from, to } = getMonthRange(currentDate)
+  const monthLabel = getMonthLabel(currentDate)
+
   useEffect(() => {
-    Promise.all([workspacesService.list(), analyticsService.getMine().catch(() => null)])
-      .then(([workspaceData, analyticsData]) => {
-        setWorkspaces(workspaceData)
-        setAnalytics(analyticsData)
-      })
+    workspacesService
+      .list()
+      .then(setWorkspaces)
       .catch(() => {})
       .finally(() => setIsLoading(false))
   }, [])
+
+  useEffect(() => {
+    analyticsService
+      .getMine(from, to)
+      .then(setAnalytics)
+      .catch(() => setAnalytics(null))
+  }, [from, to])
 
   async function handleCreate() {
     if (!name.trim()) return
@@ -269,8 +316,6 @@ export function WorkspacesPage() {
           />
         ) : (
           <>
-            {analytics && <PersonalAnalytics analytics={analytics} />}
-
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold tracking-[0.12em] uppercase text-[#B5ADA4]">
                 Workspaces
@@ -311,6 +356,16 @@ export function WorkspacesPage() {
                 </div>
               ))}
             </div>
+
+            {analytics && (
+              <PersonalAnalytics
+                analytics={analytics}
+                monthLabel={monthLabel}
+                monthOffset={monthOffset}
+                onPreviousMonth={() => setMonthOffset((offset) => offset - 1)}
+                onNextMonth={() => setMonthOffset((offset) => offset + 1)}
+              />
+            )}
           </>
         )}
       </div>
