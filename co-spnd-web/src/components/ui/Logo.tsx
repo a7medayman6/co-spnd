@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg'
   showWordmark?: boolean
@@ -10,7 +12,11 @@ export function Logo({ size = 'md', showWordmark = true, className = '' }: LogoP
   const textClass = { sm: 'text-[15px]', md: 'text-[18px]', lg: 'text-[24px]' }[size]
 
   return (
-    <div className={`flex items-center gap-2.5 select-none ${className}`}>
+    <Link
+      to="/"
+      aria-label="Go to home page"
+      className={`flex items-center gap-2.5 select-none rounded-lg outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0E0C0A]/20 ${className}`}
+    >
       <svg
         width={markW}
         height={markH}
@@ -32,6 +38,6 @@ export function Logo({ size = 'md', showWordmark = true, className = '' }: LogoP
           Co-Spnd
         </span>
       )}
-    </div>
+    </Link>
   )
 }
