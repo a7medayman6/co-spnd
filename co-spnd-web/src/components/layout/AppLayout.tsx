@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useParams, useNavigate } from 'react-router-dom'
-import { Receipt, BarChart2, Users, User, ChevronLeft } from 'lucide-react'
+import { Receipt, BarChart2, Settings, User, ChevronLeft } from 'lucide-react'
 import { BottomNav } from './BottomNav'
 import { Logo } from '../ui/Logo'
 
@@ -11,7 +11,7 @@ export function AppLayout() {
     ? [
         { to: `/workspaces/${workspaceId}/transactions`, icon: Receipt, label: 'Expenses' },
         { to: `/workspaces/${workspaceId}/analytics`, icon: BarChart2, label: 'Analytics' },
-        { to: `/workspaces/${workspaceId}/members`, icon: Users, label: 'Members' },
+        { to: `/workspaces/${workspaceId}/members`, icon: Settings, label: 'Settings' },
         { to: `/workspaces/${workspaceId}/profile`, icon: User, label: 'Profile' },
       ]
     : []

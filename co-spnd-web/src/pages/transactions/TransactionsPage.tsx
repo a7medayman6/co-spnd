@@ -339,54 +339,49 @@ export function TransactionsPage() {
           />
         ) : (
           <div className="flex flex-col gap-2">
-            {filteredTransactions.map((tx) => {
-              const isOwner = tx.createdBy === user?.id
-              return (
-                <div
-                  key={tx.id}
-                  className="bg-white rounded-2xl border border-[#EDE9E1] shadow-[0_1px_3px_rgba(14,12,10,0.05)] px-4 py-3.5 flex items-center gap-3"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-money font-semibold text-[17px] text-gray-950">
-                        {formatCurrency(tx.amount, currency)}
-                      </span>
-                      <Badge label={tx.category} colorKey={tx.category} />
-                    </div>
-                    {tx.description && (
-                      <p className="text-sm text-gray-500 mt-0.5 truncate">{tx.description}</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-xs text-gray-400">{formatDate(tx.date)}</p>
-                      {tx.spenderName && (
-                        <>
-                          <span className="text-gray-200">·</span>
-                          <p className="text-xs text-gray-400">
-                            Paid by <span className="font-medium text-gray-500">{tx.spenderName}</span>
-                          </p>
-                        </>
-                      )}
-                    </div>
+            {filteredTransactions.map((tx) => (
+              <div
+                key={tx.id}
+                className="bg-white rounded-2xl border border-[#EDE9E1] shadow-[0_1px_3px_rgba(14,12,10,0.05)] px-4 py-3.5 flex items-center gap-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-money font-semibold text-[17px] text-gray-950">
+                      {formatCurrency(tx.amount, currency)}
+                    </span>
+                    <Badge label={tx.category} colorKey={tx.category} />
                   </div>
-                  {isOwner && (
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => openEdit(tx)}
-                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => setDeleteTarget(tx)}
-                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                  {tx.description && (
+                    <p className="text-sm text-gray-500 mt-0.5 truncate">{tx.description}</p>
                   )}
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-gray-400">{formatDate(tx.date)}</p>
+                    {tx.spenderName && (
+                      <>
+                        <span className="text-gray-200">·</span>
+                        <p className="text-xs text-gray-400">
+                          Paid by <span className="font-medium text-gray-500">{tx.spenderName}</span>
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
-              )
-            })}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => openEdit(tx)}
+                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(tx)}
+                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -86,6 +86,16 @@ export class WorkspacesService {
     return this.getSplittingConfig(workspaceId);
   }
 
+  async updateName(workspaceId: string, requestingUserId: string, name: string): Promise<WorkspaceDocument> {
+    const workspace = await this.findById(workspaceId);
+    if (!workspace) throw new NotFoundException('Workspace not found');
+    if (workspace.createdBy.toString() !== requestingUserId) {
+      throw new ForbiddenException('Only the workspace creator can rename the workspace');
+    }
+    workspace.name = name;
+    return workspace.save();
+  }
+
   async isMember(workspaceId: string, userId: string): Promise<boolean> {
     const workspace = await this.findById(workspaceId);
     if (!workspace) return false;

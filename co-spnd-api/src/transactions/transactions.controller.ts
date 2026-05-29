@@ -20,6 +20,23 @@ import { WorkspaceMemberGuard } from '../workspaces/workspace-member.guard';
 export class TransactionsController {
   constructor(private transactionsService: TransactionsService) {}
 
+  private serializeTransaction(t: any) {
+    const spender = t.spenderId as any;
+    const creator = t.createdBy as any;
+    return {
+      id: t._id,
+      amount: t.amount,
+      category: t.category,
+      description: t.description,
+      date: t.date,
+      spenderId: spender?._id?.toString() ?? spender?.toString() ?? '',
+      spenderName: spender?.name ?? '',
+      createdBy: creator?._id?.toString() ?? creator?.toString() ?? '',
+      workspaceId: t.workspaceId,
+      paymentMethod: t.paymentMethod,
+    };
+  }
+
   @Post('workspaces/:workspaceId/transactions')
   @UseGuards(WorkspaceMemberGuard)
   async create(
@@ -32,17 +49,7 @@ export class TransactionsController {
       req.user.userId,
       createTransactionDto,
     );
-    return {
-      id: transaction._id,
-      amount: transaction.amount,
-      category: transaction.category,
-      description: transaction.description,
-      date: transaction.date,
-      spenderId: transaction.spenderId,
-      createdBy: transaction.createdBy,
-      workspaceId: transaction.workspaceId,
-      paymentMethod: transaction.paymentMethod,
-    };
+    return this.serializeTransaction(transaction);
   }
 
   @Get('workspaces/:workspaceId/transactions')
@@ -53,17 +60,7 @@ export class TransactionsController {
     @Query('to') to?: string,
   ) {
     const transactions = await this.transactionsService.findByWorkspace(workspaceId, from, to);
-    return transactions.map((t) => ({
-      id: t._id,
-      amount: t.amount,
-      category: t.category,
-      description: t.description,
-      date: t.date,
-      spender: t.spenderId,
-      createdBy: t.createdBy,
-      workspaceId: t.workspaceId,
-      paymentMethod: t.paymentMethod,
-    }));
+    return transactions.map((t) => this.serializeTransaction(t));
   }
 
   @Put('transactions/:transactionId')
@@ -77,20 +74,8 @@ export class TransactionsController {
       req.user.userId,
       updateTransactionDto,
     );
-    if (!transaction) {
-      return null;
-    }
-    return {
-      id: transaction._id,
-      amount: transaction.amount,
-      category: transaction.category,
-      description: transaction.description,
-      date: transaction.date,
-      spenderId: transaction.spenderId,
-      createdBy: transaction.createdBy,
-      workspaceId: transaction.workspaceId,
-      paymentMethod: transaction.paymentMethod,
-    };
+    if (!transaction) return null;
+    return this.serializeTransaction(transaction);
   }
 
   @Delete('transactions/:transactionId')

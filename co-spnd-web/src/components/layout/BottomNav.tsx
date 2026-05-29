@@ -1,5 +1,5 @@
 import { NavLink, useParams } from 'react-router-dom'
-import { Receipt, BarChart2, Users, User } from 'lucide-react'
+import { Receipt, BarChart2, Settings, User } from 'lucide-react'
 
 export function BottomNav() {
   const { workspaceId } = useParams<{ workspaceId: string }>()
@@ -8,7 +8,7 @@ export function BottomNav() {
   const navItems = [
     { to: `/workspaces/${workspaceId}/transactions`, icon: Receipt, label: 'Expenses' },
     { to: `/workspaces/${workspaceId}/analytics`, icon: BarChart2, label: 'Analytics' },
-    { to: `/workspaces/${workspaceId}/members`, icon: Users, label: 'Members' },
+    { to: `/workspaces/${workspaceId}/members`, icon: Settings, label: 'Settings' },
     { to: `/workspaces/${workspaceId}/profile`, icon: User, label: 'Profile' },
   ]
 

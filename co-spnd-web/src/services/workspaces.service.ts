@@ -12,6 +12,11 @@ export const workspacesService = {
     return data
   },
 
+  async updateName(workspaceId: string, name: string): Promise<Workspace> {
+    const { data } = await api.patch<Workspace>(`/workspaces/${workspaceId}`, { name })
+    return data
+  },
+
   async invite(workspaceId: string, email: string): Promise<{ success: boolean }> {
     const { data } = await api.post<{ success: boolean }>(
       `/workspaces/${workspaceId}/invite`,

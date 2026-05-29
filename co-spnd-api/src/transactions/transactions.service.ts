@@ -27,7 +27,13 @@ export class TransactionsService {
       workspaceId: new Types.ObjectId(workspaceId),
       paymentMethod: createTransactionDto.paymentMethod || 'CASH',
     });
-    return transaction.save();
+    const saved = await transaction.save();
+    const populated = await this.transactionModel
+      .findById(saved._id)
+      .populate('spenderId', '_id name email')
+      .populate('createdBy', '_id name email')
+      .exec();
+    return populated!;
   }
 
   async findByWorkspace(
@@ -65,10 +71,6 @@ export class TransactionsService {
       throw new NotFoundException('Transaction not found');
     }
 
-    if (transaction.createdBy.toString() !== userId) {
-      throw new ForbiddenException('Only the creator can update this transaction');
-    }
-
     const updateData: any = {};
     if (updateTransactionDto.amount !== undefined) updateData.amount = updateTransactionDto.amount;
     if (updateTransactionDto.category !== undefined) updateData.category = updateTransactionDto.category;
@@ -77,17 +79,17 @@ export class TransactionsService {
     if (updateTransactionDto.spenderId !== undefined) updateData.spenderId = new Types.ObjectId(updateTransactionDto.spenderId);
     if (updateTransactionDto.paymentMethod !== undefined) updateData.paymentMethod = updateTransactionDto.paymentMethod;
 
-    return this.transactionModel.findByIdAndUpdate(transactionId, updateData, { new: true }).exec();
+    return this.transactionModel
+      .findByIdAndUpdate(transactionId, updateData, { new: true })
+      .populate('spenderId', '_id name email')
+      .populate('createdBy', '_id name email')
+      .exec();
   }
 
   async delete(transactionId: string, userId: string): Promise<void> {
     const transaction = await this.findById(transactionId);
     if (!transaction) {
       throw new NotFoundException('Transaction not found');
-    }
-
-    if (transaction.createdBy.toString() !== userId) {
-      throw new ForbiddenException('Only the creator can delete this transaction');
     }
 
     await this.transactionModel.findByIdAndDelete(transactionId).exec();

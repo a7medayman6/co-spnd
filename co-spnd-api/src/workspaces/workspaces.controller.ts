@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { WorkspacesService } from './workspaces.service';
-import { CreateWorkspaceDto, InviteUserDto, UpdateSplittingConfigDto } from './workspace.dto';
+import { CreateWorkspaceDto, InviteUserDto, UpdateSplittingConfigDto, UpdateWorkspaceDto } from './workspace.dto';
 import { WorkspaceMemberGuard } from './workspace-member.guard';
 
 @Controller('workspaces')
@@ -35,6 +35,22 @@ export class WorkspacesController {
       membersCount: w.members.length,
       createdBy: w.createdBy,
     }));
+  }
+
+  @Patch(':workspaceId')
+  @UseGuards(WorkspaceMemberGuard)
+  async update(
+    @Param('workspaceId') workspaceId: string,
+    @Request() req: any,
+    @Body() dto: UpdateWorkspaceDto,
+  ) {
+    const workspace = await this.workspacesService.updateName(workspaceId, req.user.userId, dto.name);
+    return {
+      id: workspace._id,
+      name: workspace.name,
+      currency: workspace.currency,
+      createdBy: workspace.createdBy,
+    };
   }
 
   @Post(':workspaceId/invite')

@@ -29,6 +29,12 @@ export class SplitEntryDto {
   percentage: number;
 }
 
+export class UpdateWorkspaceDto {
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+}
+
 export class UpdateSplittingConfigDto {
   @ValidateNested({ each: true })
   @Type(() => SplitEntryDto)
