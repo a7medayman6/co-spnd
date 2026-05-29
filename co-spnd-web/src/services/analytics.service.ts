@@ -5,9 +5,18 @@ import type {
   TopExpensesResponse,
   ComparisonResponse,
   CategoryTrendsResponse,
+  UserAnalytics,
 } from '../types'
 
 export const analyticsService = {
+  async getMine(from?: string, to?: string): Promise<UserAnalytics> {
+    const params: Record<string, string> = {}
+    if (from) params.from = from
+    if (to) params.to = to
+    const { data } = await api.get<UserAnalytics>('/analytics/me', { params })
+    return data
+  },
+
   async get(workspaceId: string, from?: string, to?: string): Promise<Analytics> {
     const params: Record<string, string> = {}
     if (from) params.from = from

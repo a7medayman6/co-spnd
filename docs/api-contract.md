@@ -9,6 +9,7 @@
 **Auth**
 
 * JWT (Bearer token)
+* Access tokens expire after 30 days
 * All routes except auth require authentication
 
 ---
@@ -269,6 +270,45 @@ Rules:
 ---
 
 ## 5. Analytics
+
+### My Analytics
+
+**GET** `/analytics/me`
+
+Query params:
+
+```
+?from=YYYY-MM-DD&to=YYYY-MM-DD
+```
+
+Returns the logged-in user's own spending across all workspaces, grouped by
+currency and by workspace.
+
+```json
+{
+  "totalsByCurrency": [
+    { "currency": "USD", "total": 2450, "transactionCount": 12 }
+  ],
+  "byCategory": [
+    { "category": "Food", "currency": "USD", "total": 430 }
+  ],
+  "byWorkspace": [
+    {
+      "workspaceId": "workspaceId",
+      "name": "Trip to Dubai",
+      "currency": "AED",
+      "userTotal": 1200,
+      "workspaceTotal": 2450,
+      "userTransactionCount": 6,
+      "workspaceTransactionCount": 12,
+      "byCategory": [
+        { "category": "Food", "total": 430 }
+      ]
+    }
+  ]
+}
+
+---
 
 **GET** `/workspaces/:workspaceId/analytics`
 

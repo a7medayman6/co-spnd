@@ -106,6 +106,21 @@ export interface CategoryTrendsResponse {
   series: CategoryTrendSeries[]
 }
 
+export interface UserAnalytics {
+  totalsByCurrency: Array<{ currency: string; total: number; transactionCount: number }>
+  byCategory: Array<{ category: string; currency: string; total: number }>
+  byWorkspace: Array<{
+    workspaceId: string
+    name: string
+    currency: string
+    userTotal: number
+    workspaceTotal: number
+    userTransactionCount: number
+    workspaceTransactionCount: number
+    byCategory: Array<{ category: string; total: number }>
+  }>
+}
+
 export interface SplitEntry {
   userId: string
   name: string

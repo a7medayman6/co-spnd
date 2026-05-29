@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Users, LogOut, ChevronRight, Trash2 } from 'lucide-react'
+import { BarChart3, Plus, Users, LogOut, ChevronRight, Trash2 } from 'lucide-react'
 import { workspacesService } from '../../services/workspaces.service'
+import { analyticsService } from '../../services/analytics.service'
 import { useAuth } from '../../hooks/useAuth'
-import type { Workspace } from '../../types'
+import type { UserAnalytics, Workspace } from '../../types'
+import { formatCurrency } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
@@ -13,10 +15,154 @@ import { Logo } from '../../components/ui/Logo'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'AED', 'EGP', 'SAR', 'CAD', 'AUD']
 
+function PersonalAnalytics({ analytics }: { analytics: UserAnalytics }) {
+  const hasSpend = analytics.totalsByCurrency.some((item) => item.total > 0)
+  const topCategories = analytics.byCategory.filter((item) => item.total > 0).slice(0, 4)
+  const activeWorkspaces = analytics.byWorkspace.filter(
+    (workspace) => workspace.userTotal > 0 || workspace.workspaceTotal > 0,
+  )
+
+  if (!hasSpend && activeWorkspaces.length === 0) {
+    return null
+  }
+
+  return (
+    <section className="mb-6 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-bold tracking-[0.12em] uppercase text-[#B5ADA4]">
+            Your analytics
+          </p>
+          <h2 className="text-lg font-extrabold text-[#0E0C0A] tracking-tight">
+            All workspaces
+          </h2>
+        </div>
+        <div className="w-9 h-9 rounded-2xl bg-white border border-[#EDE9E1] flex items-center justify-center text-[#8C8479]">
+          <BarChart3 size={17} />
+        </div>
+      </div>
+
+      {hasSpend && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {analytics.totalsByCurrency.map((item) => (
+            <div
+              key={item.currency}
+              className="bg-white border border-[#EDE9E1] rounded-2xl px-4 py-3 shadow-[0_1px_3px_rgba(14,12,10,0.04)]"
+            >
+              <p className="text-[11px] font-bold tracking-[0.12em] uppercase text-[#B5ADA4] mb-1">
+                {item.currency}
+              </p>
+              <p className="font-money text-2xl font-semibold text-[#0E0C0A] leading-none">
+                {formatCurrency(item.total, item.currency)}
+              </p>
+              <p className="text-xs text-[#8C8479] mt-2">
+                {item.transactionCount} transaction{item.transactionCount === 1 ? '' : 's'}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {topCategories.length > 0 && (
+        <div className="bg-white border border-[#EDE9E1] rounded-2xl px-4 py-4 shadow-[0_1px_3px_rgba(14,12,10,0.04)]">
+          <p className="text-xs font-bold tracking-[0.12em] uppercase text-[#B5ADA4] mb-3">
+            Top categories
+          </p>
+          <div className="flex flex-col gap-3">
+            {topCategories.map((category) => (
+              <div
+                key={`${category.category}-${category.currency}`}
+                className="flex items-center justify-between gap-3"
+              >
+                <span className="text-sm font-semibold text-[#0E0C0A] truncate">
+                  {category.category}
+                </span>
+                <span className="font-money text-sm font-semibold text-[#0E0C0A] shrink-0">
+                  {formatCurrency(category.total, category.currency)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeWorkspaces.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          {activeWorkspaces.map((workspace) => {
+            const share =
+              workspace.workspaceTotal > 0
+                ? Math.min((workspace.userTotal / workspace.workspaceTotal) * 100, 100)
+                : 0
+            const categories = workspace.byCategory.slice(0, 3)
+
+            return (
+              <div
+                key={workspace.workspaceId}
+                className="bg-white border border-[#EDE9E1] rounded-2xl px-4 py-4 shadow-[0_1px_3px_rgba(14,12,10,0.04)]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-bold text-[#0E0C0A] truncate">
+                      {workspace.name}
+                    </p>
+                    <p className="text-xs text-[#8C8479] mt-1">
+                      Your spend · {workspace.userTransactionCount} transaction
+                      {workspace.userTransactionCount === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-[#8C8479] bg-[#F2F0EB] px-2 py-1 rounded-lg shrink-0">
+                    {workspace.currency}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <div>
+                    <p className="text-[11px] text-[#B5ADA4] font-semibold mb-1">You</p>
+                    <p className="font-money text-[17px] font-semibold text-[#0E0C0A]">
+                      {formatCurrency(workspace.userTotal, workspace.currency)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-[#B5ADA4] font-semibold mb-1">Workspace</p>
+                    <p className="font-money text-[17px] font-semibold text-[#0E0C0A]">
+                      {formatCurrency(workspace.workspaceTotal, workspace.currency)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="h-1.5 bg-[#F2F0EB] rounded-full overflow-hidden mt-3">
+                  <div
+                    className="h-full bg-[#0E0C0A] rounded-full transition-all duration-700"
+                    style={{ width: `${share}%` }}
+                  />
+                </div>
+
+                {categories.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {categories.map((category) => (
+                      <span
+                        key={category.category}
+                        className="text-[11px] font-semibold text-[#8C8479] bg-[#F9F8F5] border border-[#EDE9E1] px-2 py-1 rounded-lg"
+                      >
+                        {category.category} · {formatCurrency(category.total, workspace.currency)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </section>
+  )
+}
+
 export function WorkspacesPage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const [analytics, setAnalytics] = useState<UserAnalytics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')
@@ -28,9 +174,11 @@ export function WorkspacesPage() {
   const [leaveError, setLeaveError] = useState('')
 
   useEffect(() => {
-    workspacesService
-      .list()
-      .then(setWorkspaces)
+    Promise.all([workspacesService.list(), analyticsService.getMine().catch(() => null)])
+      .then(([workspaceData, analyticsData]) => {
+        setWorkspaces(workspaceData)
+        setAnalytics(analyticsData)
+      })
       .catch(() => {})
       .finally(() => setIsLoading(false))
   }, [])
@@ -120,40 +268,50 @@ export function WorkspacesPage() {
             }
           />
         ) : (
-          <div className="flex flex-col gap-2.5">
-            {workspaces.map((ws) => (
-              <div
-                key={ws.id}
-                className="w-full bg-white rounded-2xl border border-[#EDE9E1] shadow-[0_1px_3px_rgba(14,12,10,0.05)] flex items-center overflow-hidden hover:shadow-md hover:border-[#D9D3C8] transition-all duration-150"
-              >
-                <button
-                  onClick={() => navigate(`/workspaces/${ws.id}/transactions`)}
-                  className="flex-1 px-4 py-4 flex items-center justify-between text-left active:scale-[0.99] transition-transform duration-150 min-w-0"
+          <>
+            {analytics && <PersonalAnalytics analytics={analytics} />}
+
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold tracking-[0.12em] uppercase text-[#B5ADA4]">
+                Workspaces
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2.5 pb-8">
+              {workspaces.map((ws) => (
+                <div
+                  key={ws.id}
+                  className="w-full bg-white rounded-2xl border border-[#EDE9E1] shadow-[0_1px_3px_rgba(14,12,10,0.05)] flex items-center overflow-hidden hover:shadow-md hover:border-[#D9D3C8] transition-all duration-150"
                 >
-                  <div className="min-w-0">
-                    <p className="font-semibold text-[#0E0C0A] text-[15px] truncate">{ws.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-[#8C8479]">
-                        {ws.membersCount ?? 1} member{(ws.membersCount ?? 1) !== 1 ? 's' : ''}
-                      </span>
-                      <span className="text-[#D9D3C8]">·</span>
-                      <span className="text-xs font-semibold text-[#8C8479] bg-[#F2F0EB] px-1.5 py-0.5 rounded-md">
-                        {ws.currency}
-                      </span>
+                  <button
+                    onClick={() => navigate(`/workspaces/${ws.id}/transactions`)}
+                    className="flex-1 px-4 py-4 flex items-center justify-between text-left active:scale-[0.99] transition-transform duration-150 min-w-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-semibold text-[#0E0C0A] text-[15px] truncate">{ws.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-[#8C8479]">
+                          {ws.membersCount ?? 1} member{(ws.membersCount ?? 1) !== 1 ? 's' : ''}
+                        </span>
+                        <span className="text-[#D9D3C8]">·</span>
+                        <span className="text-xs font-semibold text-[#8C8479] bg-[#F2F0EB] px-1.5 py-0.5 rounded-md">
+                          {ws.currency}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <ChevronRight size={16} className="text-[#C8C2B9] shrink-0 ml-3" />
-                </button>
-                <button
-                  onClick={() => { setLeaveTarget(ws); setLeaveError('') }}
-                  className="px-3 py-4 text-[#C8C2B9] hover:text-red-400 hover:bg-red-50 transition-colors border-l border-[#EDE9E1] self-stretch flex items-center"
-                  aria-label={`Leave ${ws.name}`}
-                >
-                  {(ws.membersCount ?? 1) <= 1 ? <Trash2 size={15} /> : <LogOut size={15} />}
-                </button>
-              </div>
-            ))}
-          </div>
+                    <ChevronRight size={16} className="text-[#C8C2B9] shrink-0 ml-3" />
+                  </button>
+                  <button
+                    onClick={() => { setLeaveTarget(ws); setLeaveError('') }}
+                    className="px-3 py-4 text-[#C8C2B9] hover:text-red-400 hover:bg-red-50 transition-colors border-l border-[#EDE9E1] self-stretch flex items-center"
+                    aria-label={`Leave ${ws.name}`}
+                  >
+                    {(ws.membersCount ?? 1) <= 1 ? <Trash2 size={15} /> : <LogOut size={15} />}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
