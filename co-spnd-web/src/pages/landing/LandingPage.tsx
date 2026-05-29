@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Star, ArrowRight, Zap, Users, BarChart3, Scale, Check, TrendingUp, Utensils, Car, ShoppingBag, Clipboard } from 'lucide-react'
+import { Star, ArrowRight, Zap, Users, BarChart3, Scale, Check, TrendingUp, Utensils, Car, ShoppingBag, Clipboard, Sparkles, MessageSquare } from 'lucide-react'
 import { Logo } from '../../components/ui/Logo'
 import { Button } from '../../components/ui/Button'
 import { useAuth } from '../../hooks/useAuth'
@@ -17,6 +17,125 @@ const transactions = [
   { desc: 'Airbnb — night 2', category: 'Accommodation', who: 'Ahmed', amount: '€110.00' },
   { desc: 'Pastéis de Belém', category: 'Food', who: 'Mona', amount: '€8.80' },
 ]
+
+function PasteToLogShowcase() {
+  return (
+    <section className="max-w-5xl mx-auto px-6 py-20">
+      {/* Header */}
+      <div className="text-center mb-14">
+        <div className="inline-flex items-center gap-2 bg-[#F3F0FF] border border-[#DDD5FF] rounded-full px-4 py-1.5 text-sm text-[#863bff] font-semibold mb-6">
+          <Clipboard size={13} />
+          Paste to Log
+        </div>
+        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
+          Copy a message. Done.
+        </h2>
+        <p className="text-[#8C8479] text-base max-w-sm mx-auto leading-relaxed">
+          Paste any bank SMS or notification and Co-Spnd extracts the amount, merchant, category, and date — no typing needed.
+        </p>
+      </div>
+
+      {/* 3-step flow */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-start">
+
+        {/* Step 1 — Copy */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] font-bold text-[#B5ADA4] tracking-widest">01</span>
+            <span className="text-[11px] font-bold text-[#B5ADA4] uppercase tracking-widest">Copy the message</span>
+          </div>
+          <div className="bg-white rounded-3xl border border-[#EDE9E1] shadow-sm p-5">
+            {/* Mock notification header */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-xl bg-[#F3F0FF] border border-[#DDD5FF] flex items-center justify-center">
+                <MessageSquare size={13} className="text-[#863bff]" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-[#0E0C0A]">Bank · SMS</p>
+                <p className="text-[10px] text-[#B5ADA4]">28 May 2026, 14:32</p>
+              </div>
+            </div>
+            {/* Message bubble */}
+            <div className="bg-[#F9F8F5] border border-[#EDE9E1] rounded-2xl px-4 py-3 text-[13px] text-[#0E0C0A] leading-relaxed">
+              Your account was debited{' '}
+              <span className="font-bold bg-[#F3F0FF] text-[#863bff] px-1 rounded">EGP 245.50</span>
+              {' '}at{' '}
+              <span className="font-semibold">Costa Coffee</span>
+              {' '}on 28-May-2026.
+            </div>
+            {/* Copy indicator */}
+            <div className="mt-3 flex items-center gap-2 text-[11px] text-[#B5ADA4] font-medium">
+              <Clipboard size={11} />
+              Long-press → Copy
+            </div>
+          </div>
+        </div>
+
+        {/* Step 2 — Paste */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] font-bold text-[#B5ADA4] tracking-widest">02</span>
+            <span className="text-[11px] font-bold text-[#B5ADA4] uppercase tracking-widest">Paste in Co-Spnd</span>
+          </div>
+          <div className="bg-white rounded-3xl border border-[#EDE9E1] shadow-sm p-5">
+            {/* Mock bottom sheet top */}
+            <p className="text-[11px] font-bold text-[#B5ADA4] uppercase tracking-widest mb-4">Add expense</p>
+            {/* Paste button */}
+            <div className="flex items-center gap-2.5 px-4 py-3 bg-[#F3F0FF] border-2 border-[#863bff] rounded-2xl mb-3">
+              <Clipboard size={15} className="text-[#863bff] shrink-0" />
+              <span className="text-sm font-semibold text-[#863bff]">Paste a bank message to auto-fill</span>
+            </div>
+            {/* Parsing animation */}
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-[#F3F0FF] border border-[#DDD5FF] rounded-2xl">
+              <Sparkles size={13} className="text-[#863bff] shrink-0" />
+              <p className="text-[12px] text-[#5A3DB5] font-semibold">Fields filled from message — review before saving.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Step 3 — Done */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] font-bold text-[#B5ADA4] tracking-widest">03</span>
+            <span className="text-[11px] font-bold text-[#B5ADA4] uppercase tracking-widest">Transaction logged</span>
+          </div>
+          <div className="bg-white rounded-3xl border border-[#EDE9E1] shadow-sm p-5">
+            {/* Amount */}
+            <div className="mb-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#B5ADA4] mb-1">Amount</p>
+              <p className="font-mono text-3xl font-bold text-[#0E0C0A] tracking-tight">245.50</p>
+              <p className="text-xs text-[#B5ADA4] font-medium">EGP</p>
+            </div>
+            {/* Category chips */}
+            <div className="mb-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#B5ADA4] mb-2">Category</p>
+              <div className="flex flex-wrap gap-1.5">
+                {['Food', 'Transport', 'Shopping'].map((cat) => (
+                  <span
+                    key={cat}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                      cat === 'Food'
+                        ? 'bg-[#0E0C0A] text-white border-[#0E0C0A]'
+                        : 'bg-white text-[#8C8479] border-[#EDE9E1]'
+                    }`}
+                  >
+                    {cat}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {/* Meta */}
+            <div className="pt-3 border-t border-[#EDE9E1] flex flex-col gap-1">
+              <p className="text-[12px] text-[#8C8479] font-medium">Costa Coffee</p>
+              <p className="text-[11px] text-[#B5ADA4]">28 May 2026</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  )
+}
 
 function AppPreview() {
   return (
@@ -263,6 +382,9 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Paste to Log Showcase ──────────────────────────────── */}
+      <PasteToLogShowcase />
 
       {/* ── How It Works ───────────────────────────────────── */}
       <section className="max-w-5xl mx-auto px-6 py-20">
