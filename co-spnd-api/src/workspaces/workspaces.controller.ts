@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { WorkspacesService } from './workspaces.service';
 import { CreateWorkspaceDto, InviteUserDto, UpdateSplittingConfigDto, UpdateWorkspaceDto } from './workspace.dto';
@@ -70,6 +70,12 @@ export class WorkspacesController {
   @UseGuards(WorkspaceMemberGuard)
   async getSplittingConfig(@Param('workspaceId') workspaceId: string) {
     return this.workspacesService.getSplittingConfig(workspaceId);
+  }
+
+  @Delete(':workspaceId/leave')
+  @UseGuards(WorkspaceMemberGuard)
+  async leave(@Param('workspaceId') workspaceId: string, @Request() req: any) {
+    return this.workspacesService.leave(workspaceId, req.user.userId);
   }
 
   @Patch(':workspaceId/splitting-config')

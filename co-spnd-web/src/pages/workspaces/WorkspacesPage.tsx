@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Users, LogOut, ChevronRight } from 'lucide-react'
+import { Plus, Users, LogOut, ChevronRight, Trash2 } from 'lucide-react'
 import { workspacesService } from '../../services/workspaces.service'
 import { useAuth } from '../../hooks/useAuth'
 import type { Workspace } from '../../types'
@@ -23,6 +23,9 @@ export function WorkspacesPage() {
   const [currency, setCurrency] = useState('USD')
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
+  const [leaveTarget, setLeaveTarget] = useState<Workspace | null>(null)
+  const [leaving, setLeaving] = useState(false)
+  const [leaveError, setLeaveError] = useState('')
 
   useEffect(() => {
     workspacesService
@@ -55,6 +58,21 @@ export function WorkspacesPage() {
     setName('')
     setCurrency('USD')
     setCreateError('')
+  }
+
+  async function handleLeave() {
+    if (!leaveTarget) return
+    setLeaving(true)
+    setLeaveError('')
+    try {
+      await workspacesService.leave(leaveTarget.id)
+      setWorkspaces((prev) => prev.filter((w) => w.id !== leaveTarget.id))
+      setLeaveTarget(null)
+    } catch {
+      setLeaveError('Something went wrong. Please try again.')
+    } finally {
+      setLeaving(false)
+    }
   }
 
   const firstName = user?.name?.split(' ')[0] ?? 'there'
@@ -104,25 +122,36 @@ export function WorkspacesPage() {
         ) : (
           <div className="flex flex-col gap-2.5">
             {workspaces.map((ws) => (
-              <button
+              <div
                 key={ws.id}
-                onClick={() => navigate(`/workspaces/${ws.id}/transactions`)}
-                className="w-full bg-white rounded-2xl border border-[#EDE9E1] shadow-[0_1px_3px_rgba(14,12,10,0.05)] px-4 py-4 flex items-center justify-between hover:shadow-md hover:border-[#D9D3C8] active:scale-[0.99] transition-all duration-150 text-left"
+                className="w-full bg-white rounded-2xl border border-[#EDE9E1] shadow-[0_1px_3px_rgba(14,12,10,0.05)] flex items-center overflow-hidden hover:shadow-md hover:border-[#D9D3C8] transition-all duration-150"
               >
-                <div>
-                  <p className="font-semibold text-[#0E0C0A] text-[15px]">{ws.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-[#8C8479]">
-                      {ws.membersCount ?? 1} member{(ws.membersCount ?? 1) !== 1 ? 's' : ''}
-                    </span>
-                    <span className="text-[#D9D3C8]">·</span>
-                    <span className="text-xs font-semibold text-[#8C8479] bg-[#F2F0EB] px-1.5 py-0.5 rounded-md">
-                      {ws.currency}
-                    </span>
+                <button
+                  onClick={() => navigate(`/workspaces/${ws.id}/transactions`)}
+                  className="flex-1 px-4 py-4 flex items-center justify-between text-left active:scale-[0.99] transition-transform duration-150 min-w-0"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#0E0C0A] text-[15px] truncate">{ws.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-[#8C8479]">
+                        {ws.membersCount ?? 1} member{(ws.membersCount ?? 1) !== 1 ? 's' : ''}
+                      </span>
+                      <span className="text-[#D9D3C8]">·</span>
+                      <span className="text-xs font-semibold text-[#8C8479] bg-[#F2F0EB] px-1.5 py-0.5 rounded-md">
+                        {ws.currency}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <ChevronRight size={16} className="text-[#C8C2B9] shrink-0" />
-              </button>
+                  <ChevronRight size={16} className="text-[#C8C2B9] shrink-0 ml-3" />
+                </button>
+                <button
+                  onClick={() => { setLeaveTarget(ws); setLeaveError('') }}
+                  className="px-3 py-4 text-[#C8C2B9] hover:text-red-400 hover:bg-red-50 transition-colors border-l border-[#EDE9E1] self-stretch flex items-center"
+                  aria-label={`Leave ${ws.name}`}
+                >
+                  {(ws.membersCount ?? 1) <= 1 ? <Trash2 size={15} /> : <LogOut size={15} />}
+                </button>
+              </div>
             ))}
           </div>
         )}
@@ -137,6 +166,51 @@ export function WorkspacesPage() {
           <Plus size={22} />
         </button>
       )}
+
+      {/* Leave / delete workspace confirmation */}
+      <Modal
+        isOpen={Boolean(leaveTarget)}
+        onClose={() => { setLeaveTarget(null); setLeaveError('') }}
+        title={(leaveTarget?.membersCount ?? 1) <= 1 ? 'Delete workspace?' : 'Leave workspace?'}
+      >
+        <div className="flex flex-col gap-4">
+          {(leaveTarget?.membersCount ?? 1) <= 1 ? (
+            <p className="text-sm text-[#8C8479] leading-relaxed">
+              You're the only member of{' '}
+              <span className="font-semibold text-[#0E0C0A]">{leaveTarget?.name}</span>. Leaving will
+              permanently delete the workspace and all its transactions. This cannot be undone.
+            </p>
+          ) : (
+            <p className="text-sm text-[#8C8479] leading-relaxed">
+              You'll be removed from{' '}
+              <span className="font-semibold text-[#0E0C0A]">{leaveTarget?.name}</span>. Other members
+              and their data will remain.
+            </p>
+          )}
+          {leaveError && (
+            <p className="text-sm text-red-500 font-medium bg-red-50 px-4 py-2.5 rounded-xl">
+              {leaveError}
+            </p>
+          )}
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => { setLeaveTarget(null); setLeaveError('') }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleLeave}
+              isLoading={leaving}
+              className="flex-1"
+            >
+              {(leaveTarget?.membersCount ?? 1) <= 1 ? 'Delete workspace' : 'Leave workspace'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Create workspace modal */}
       <Modal isOpen={showCreate} onClose={handleCloseCreate} title="New workspace">

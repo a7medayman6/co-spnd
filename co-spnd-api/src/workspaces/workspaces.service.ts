@@ -126,6 +126,26 @@ export class WorkspacesService {
     return true;
   }
 
+  async leave(workspaceId: string, userId: string): Promise<{ deleted: boolean }> {
+    const workspace = await this.findById(workspaceId);
+    if (!workspace) throw new NotFoundException('Workspace not found');
+
+    const isMember = workspace.members.some((m) => m.toString() === userId);
+    if (!isMember) throw new ForbiddenException('You are not a member of this workspace');
+
+    if (workspace.members.length === 1) {
+      await this.workspaceModel.findByIdAndDelete(workspaceId).exec();
+      return { deleted: true };
+    }
+
+    workspace.members = workspace.members.filter((m) => m.toString() !== userId) as Types.ObjectId[];
+    workspace.splittingConfig = workspace.splittingConfig.filter(
+      (e) => e.userId.toString() !== userId,
+    );
+    await workspace.save();
+    return { deleted: false };
+  }
+
   async getMembers(workspaceId: string): Promise<any[]> {
     const workspace = await this.workspaceModel
       .findById(workspaceId)

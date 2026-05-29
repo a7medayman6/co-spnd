@@ -30,6 +30,11 @@ export const workspacesService = {
     return data
   },
 
+  async leave(workspaceId: string): Promise<{ deleted: boolean }> {
+    const { data } = await api.delete<{ deleted: boolean }>(`/workspaces/${workspaceId}/leave`)
+    return data
+  },
+
   async getSplittingConfig(workspaceId: string): Promise<SplitEntry[]> {
     const { data } = await api.get<SplitEntry[]>(`/workspaces/${workspaceId}/splitting-config`)
     return data
