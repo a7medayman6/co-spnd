@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Star, ArrowRight, Zap, Users, BarChart3, Scale, Check, TrendingUp, Utensils, Car, ShoppingBag } from 'lucide-react'
+import { Star, ArrowRight, Zap, Users, BarChart3, Scale, Check, TrendingUp, Utensils, Car, ShoppingBag, Clipboard } from 'lucide-react'
 import { Logo } from '../../components/ui/Logo'
 import { Button } from '../../components/ui/Button'
 import { useAuth } from '../../hooks/useAuth'
@@ -240,6 +240,11 @@ export function LandingPage() {
                 icon: <Scale size={20} />,
                 title: 'Custom Splits',
                 desc: 'Set percentage-based splits per workspace member. Flexible and fair for every situation.',
+              },
+              {
+                icon: <Clipboard size={20} />,
+                title: 'Paste to Log',
+                desc: 'Copy a bank message and paste it — Co-Spnd extracts the amount, category, merchant, and date automatically. No typing required.',
               },
             ].map((f) => (
               <div

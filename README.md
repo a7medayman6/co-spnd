@@ -48,8 +48,11 @@ Create a workspace, invite your group, and start logging. See who spent what, wh
 
 - Create or join a workspace with a shared currency
 - Log transactions in seconds — amount and category are all you need
+- **Paste a bank SMS or notification** to auto-fill amount, category, merchant, and date — no manual entry
 - View the group's spending breakdown by category, by person, and over time
-- Compare this month's spending to last month
+- Compare this month's spending to last month with a percentage delta
+- Set a monthly budget per workspace and track progress with a colour-coded bar
+- Browse expenses month-by-month with a simple prev/next navigator
 - Invite members by email
 
 ### Design Philosophy
@@ -67,11 +70,10 @@ The transaction entry experience is the highest-priority UX surface. Amount and 
 
 Intentionally excluded from the MVP:
 
-- Budgets and savings goals
+- Savings goals
 - Notifications or reminders
 - Real-time sync or offline mode
 - Multi-currency within a single workspace
-- Export (CSV, PDF)
 - AI integrations
 - Advanced permission roles
 
@@ -142,7 +144,11 @@ co-spnd-web/src/
 │   └── profile/         # ProfilePage
 ├── services/            # One file per API domain (auth, transactions, analytics, ...)
 ├── types/               # Shared TypeScript types
-└── utils/               # date.ts, csv.ts
+└── utils/
+    ├── date.ts          # Formatting and month-range helpers
+    ├── csv.ts           # CSV export
+    ├── budget.ts        # Per-workspace monthly budget (localStorage)
+    └── messageParser.ts # Bank message → transaction field extractor
 ```
 
 ### Environment Variables

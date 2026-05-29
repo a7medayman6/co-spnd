@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Receipt, Download, ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react'
+import { Plus, Trash2, Pencil, Receipt, Download, ChevronLeft, ChevronRight, SlidersHorizontal, X, Clipboard } from 'lucide-react'
 import { transactionsService } from '../../services/transactions.service'
 import { workspacesService } from '../../services/workspaces.service'
 import { analyticsService } from '../../services/analytics.service'
@@ -66,6 +66,7 @@ export function TransactionsPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [filterCategory, setFilterCategory] = useState('')
   const [filterSpenderId, setFilterSpenderId] = useState('')
+  const [pasteMode, setPasteMode] = useState(false)
 
   const selectedDate = new Date()
   selectedDate.setMonth(selectedDate.getMonth() + monthOffset)
@@ -390,21 +391,32 @@ export function TransactionsPage() {
         )}
       </div>
 
-      {/* FAB */}
-      <button
-        onClick={() => setShowAdd(true)}
-        className="fixed bottom-24 right-5 lg:bottom-8 w-14 h-14 bg-[#0E0C0A] text-white rounded-2xl shadow-lg hover:bg-[#2A2724] active:scale-95 transition-all duration-150 flex items-center justify-center z-30"
-      >
-        <Plus size={22} />
-      </button>
+      {/* FAB cluster */}
+      <div className="fixed bottom-24 right-5 lg:bottom-8 flex flex-col items-center gap-2.5 z-30">
+        <button
+          onClick={() => { setPasteMode(true); setShowAdd(true) }}
+          className="w-12 h-12 bg-white border border-[#EDE9E1] text-[#863bff] rounded-2xl shadow-md hover:bg-[#F3F0FF] active:scale-95 transition-all duration-150 flex items-center justify-center"
+          aria-label="Paste bank message"
+        >
+          <Clipboard size={18} />
+        </button>
+        <button
+          onClick={() => { setPasteMode(false); setShowAdd(true) }}
+          className="w-14 h-14 bg-[#0E0C0A] text-white rounded-2xl shadow-lg hover:bg-[#2A2724] active:scale-95 transition-all duration-150 flex items-center justify-center"
+          aria-label="Add expense"
+        >
+          <Plus size={22} />
+        </button>
+      </div>
 
       {/* Add transaction sheet */}
       <AddTransactionSheet
         isOpen={showAdd}
-        onClose={() => setShowAdd(false)}
+        onClose={() => { setShowAdd(false); setPasteMode(false) }}
         workspaceId={workspaceId!}
         currency={currency}
         onAdded={handleAdded}
+        openWithPaste={pasteMode}
       />
 
       {/* Edit modal */}

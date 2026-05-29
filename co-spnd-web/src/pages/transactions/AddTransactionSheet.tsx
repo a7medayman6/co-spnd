@@ -17,6 +17,7 @@ interface AddTransactionSheetProps {
   workspaceId: string
   currency: string
   onAdded: (tx: Transaction) => void
+  openWithPaste?: boolean
 }
 
 export function AddTransactionSheet({
@@ -25,6 +26,7 @@ export function AddTransactionSheet({
   workspaceId,
   currency,
   onAdded,
+  openWithPaste = false,
 }: AddTransactionSheetProps) {
   const { user } = useAuth()
   const [amount, setAmount] = useState('')
@@ -56,6 +58,14 @@ export function AddTransactionSheet({
       setTimeout(() => pasteRef.current?.focus(), 50)
     }
   }, [showPasteArea])
+
+  // Auto-trigger paste flow when opened via the clipboard shortcut
+  useEffect(() => {
+    if (isOpen && openWithPaste) {
+      setTimeout(() => handleClipboardPaste(), 100)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, openWithPaste])
 
   function applyParsed(text: string) {
     if (!text.trim()) return
