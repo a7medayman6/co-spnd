@@ -31,7 +31,7 @@ function BudgetBar({ spent, budget, currency }: { spent: number; budget: number;
     <div className="mt-3">
       <div className="flex justify-between items-baseline mb-1.5">
         <span className="text-xs font-medium text-gray-400">
-          {over ? 'Over budget' : `${Math.round(pct)}% of budget `}
+          {over ? 'Over budget' : ` ${Math.round(pct)}% of budget `}
         </span>
         <span className="text-xs font-medium text-gray-400">
           {formatCurrency(budget, currency)}
