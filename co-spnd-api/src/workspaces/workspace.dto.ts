@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, Min, Max, ValidateNested, ArrayMinSize } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, Min, Max, ValidateNested, ArrayMinSize, IsArray, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateWorkspaceDto {
@@ -40,4 +40,16 @@ export class UpdateSplittingConfigDto {
   @Type(() => SplitEntryDto)
   @ArrayMinSize(1)
   splittingConfig: SplitEntryDto[];
+}
+
+export class UpdateCategoriesDto {
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  add?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  remove?: string[];
 }

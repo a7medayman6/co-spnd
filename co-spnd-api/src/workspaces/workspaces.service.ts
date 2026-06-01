@@ -160,4 +160,32 @@ export class WorkspacesService {
       email: m.email,
     }));
   }
+
+  async getCategories(workspaceId: string): Promise<string[]> {
+    const workspace = await this.findById(workspaceId);
+    if (!workspace) throw new NotFoundException('Workspace not found');
+    return workspace.customCategories ?? [];
+  }
+
+  async updateCategories(
+    workspaceId: string,
+    add: string[] = [],
+    remove: string[] = [],
+  ): Promise<string[]> {
+    const workspace = await this.findById(workspaceId);
+    if (!workspace) throw new NotFoundException('Workspace not found');
+
+    const existing = new Set(workspace.customCategories ?? []);
+    for (const cat of add) {
+      const trimmed = cat.trim();
+      if (trimmed) existing.add(trimmed);
+    }
+    for (const cat of remove) {
+      existing.delete(cat.trim());
+    }
+
+    workspace.customCategories = Array.from(existing);
+    await workspace.save();
+    return workspace.customCategories;
+  }
 }
