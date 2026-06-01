@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { WorkspacesService } from './workspaces.service';
-import { CreateWorkspaceDto, InviteUserDto, UpdateSplittingConfigDto, UpdateWorkspaceDto } from './workspace.dto';
+import { CreateWorkspaceDto, InviteUserDto, UpdateSplittingConfigDto, UpdateWorkspaceDto, UpdateCategoriesDto } from './workspace.dto';
 import { WorkspaceMemberGuard } from './workspace-member.guard';
 
 @Controller('workspaces')
@@ -86,5 +86,26 @@ export class WorkspacesController {
     @Body() dto: UpdateSplittingConfigDto,
   ) {
     return this.workspacesService.updateSplittingConfig(workspaceId, req.user.userId, dto.splittingConfig);
+  }
+
+  @Get(':workspaceId/categories')
+  @UseGuards(WorkspaceMemberGuard)
+  async getCategories(@Param('workspaceId') workspaceId: string) {
+    const customCategories = await this.workspacesService.getCategories(workspaceId);
+    return { customCategories };
+  }
+
+  @Patch(':workspaceId/categories')
+  @UseGuards(WorkspaceMemberGuard)
+  async updateCategories(
+    @Param('workspaceId') workspaceId: string,
+    @Body() dto: UpdateCategoriesDto,
+  ) {
+    const customCategories = await this.workspacesService.updateCategories(
+      workspaceId,
+      dto.add,
+      dto.remove,
+    );
+    return { customCategories };
   }
 }
