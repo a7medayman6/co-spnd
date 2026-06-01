@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { ChevronDown, ChevronUp, Clipboard, X, AlertTriangle, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clipboard, X, AlertTriangle, Sparkles, Plus, Check } from 'lucide-react'
 import { transactionsService } from '../../services/transactions.service'
 import { workspacesService } from '../../services/workspaces.service'
 import { useAuth } from '../../hooks/useAuth'
@@ -35,9 +35,16 @@ export function AddTransactionSheet({
   const [date, setDate] = useState(toInputDateValue())
   const [spenderId, setSpenderId] = useState('')
   const [members, setMembers] = useState<WorkspaceMember[]>([])
+  const [customCategories, setCustomCategories] = useState<string[]>([])
   const [showMore, setShowMore] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Inline new category creation
+  const [addingCategory, setAddingCategory] = useState(false)
+  const [newCategoryInput, setNewCategoryInput] = useState('')
+  const [savingCategory, setSavingCategory] = useState(false)
+  const newCatInputRef = useRef<HTMLInputElement>(null)
 
   // paste-to-fill state
   const [parsedFrom, setParsedFrom] = useState(false)
@@ -48,10 +55,13 @@ export function AddTransactionSheet({
   const pasteRef = useRef<HTMLTextAreaElement>(null)
   const descriptionRef = useRef<HTMLInputElement>(null)
 
+  const allCategories = [...CATEGORIES, ...customCategories]
+
   useEffect(() => {
     if (isOpen && user) {
       setSpenderId(user.id)
       workspacesService.getMembers(workspaceId).then(setMembers).catch(() => {})
+      workspacesService.getCategories(workspaceId).then(setCustomCategories).catch(() => {})
     }
   }, [isOpen, workspaceId, user])
 
@@ -61,7 +71,12 @@ export function AddTransactionSheet({
     }
   }, [showPasteArea])
 
-  // Auto-trigger paste flow when opened via the clipboard shortcut
+  useEffect(() => {
+    if (addingCategory) {
+      setTimeout(() => newCatInputRef.current?.focus(), 50)
+    }
+  }, [addingCategory])
+
   useEffect(() => {
     if (isOpen && openWithPaste) {
       setTimeout(() => handleClipboardPaste(), 100)
@@ -117,11 +132,38 @@ export function AddTransactionSheet({
     setIsCreditWarning(false)
     setShowPasteArea(false)
     setPasteText('')
+    setAddingCategory(false)
+    setNewCategoryInput('')
   }
 
   function handleClose() {
     reset()
     onClose()
+  }
+
+  async function handleSaveNewCategory() {
+    const trimmed = newCategoryInput.trim()
+    if (!trimmed) return
+    if (allCategories.includes(trimmed)) {
+      setCategory(trimmed)
+      setAddingCategory(false)
+      setNewCategoryInput('')
+      return
+    }
+    setSavingCategory(true)
+    try {
+      const updated = await workspacesService.updateCategories(workspaceId, [trimmed], [])
+      setCustomCategories(updated)
+      setCategory(trimmed)
+    } catch {
+      // silently fall back — category still gets selected locally
+      setCustomCategories((prev) => [...prev, trimmed])
+      setCategory(trimmed)
+    } finally {
+      setSavingCategory(false)
+      setAddingCategory(false)
+      setNewCategoryInput('')
+    }
   }
 
   async function handleSubmit() {
@@ -270,12 +312,12 @@ export function AddTransactionSheet({
             Category
           </label>
           <div className="grid grid-cols-3 gap-2">
-            {CATEGORIES.map((cat) => (
+            {allCategories.map((cat) => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setCategory(cat)}
-                className={`py-2.5 px-3 rounded-xl text-sm font-semibold border transition-all duration-150 active:scale-95 ${
+                className={`py-2.5 px-3 rounded-xl text-sm font-semibold border transition-all duration-150 active:scale-95 truncate ${
                   category === cat
                     ? 'bg-gray-950 text-white border-gray-950 shadow-sm'
                     : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
@@ -284,6 +326,51 @@ export function AddTransactionSheet({
                 {cat}
               </button>
             ))}
+
+            {/* Inline new category */}
+            {addingCategory ? (
+              <div className="col-span-3 flex items-center gap-2 mt-1">
+                <input
+                  ref={newCatInputRef}
+                  value={newCategoryInput}
+                  onChange={(e) => setNewCategoryInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveNewCategory()
+                    if (e.key === 'Escape') { setAddingCategory(false); setNewCategoryInput('') }
+                  }}
+                  placeholder="Category name"
+                  className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-gray-400 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveNewCategory}
+                  disabled={!newCategoryInput.trim() || savingCategory}
+                  className="w-9 h-9 flex items-center justify-center bg-gray-950 text-white rounded-xl disabled:opacity-40 transition-colors"
+                >
+                  {savingCategory ? (
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Check size={14} />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAddingCategory(false); setNewCategoryInput('') }}
+                  className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-gray-600 border border-gray-200 rounded-xl transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAddingCategory(true)}
+                className="py-2.5 px-3 rounded-xl text-sm font-semibold border border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-all duration-150 active:scale-95 flex items-center justify-center gap-1"
+              >
+                <Plus size={13} />
+                New
+              </button>
+            )}
           </div>
         </div>
 
