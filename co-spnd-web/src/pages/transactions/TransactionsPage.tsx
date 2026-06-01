@@ -67,6 +67,7 @@ export function TransactionsPage() {
   const [filterCategory, setFilterCategory] = useState('')
   const [filterSpenderId, setFilterSpenderId] = useState('')
   const [pasteMode, setPasteMode] = useState(false)
+  const [customCategories, setCustomCategories] = useState<string[]>([])
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState<{ imported: number; errors: { row: number; message: string }[] } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -79,13 +80,15 @@ export function TransactionsPage() {
 
   const load = useCallback(async () => {
     if (!workspaceId) return
-    const [txs, wsList, memberList] = await Promise.all([
+    const [txs, wsList, memberList, cats] = await Promise.all([
       transactionsService.list(workspaceId, from, to),
       workspacesService.list(),
       workspacesService.getMembers(workspaceId),
+      workspacesService.getCategories(workspaceId),
     ])
     setTransactions(txs)
     setMembers(memberList)
+    setCustomCategories(cats)
     const ws = wsList.find((w) => w.id === workspaceId) ?? null
     setWorkspace(ws)
     setBudget(ws ? getBudget(workspaceId) : null)
@@ -228,6 +231,8 @@ export function TransactionsPage() {
     }
   }
 
+  const allCategories = [...CATEGORIES, ...customCategories]
+
   const filteredTransactions = transactions.filter((t) => {
     if (filterCategory && t.category !== filterCategory) return false
     if (filterSpenderId && t.spenderId !== filterSpenderId) return false
@@ -347,7 +352,7 @@ export function TransactionsPage() {
                   className="w-full px-3 py-2 bg-[#F9F8F5] border border-[#EDE9E1] rounded-xl text-[#0E0C0A] text-sm outline-none focus:border-gray-400 transition-all"
                 >
                   <option value="">All</option>
-                  {CATEGORIES.map((cat) => (
+                  {allCategories.map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
@@ -511,7 +516,7 @@ export function TransactionsPage() {
               onChange={(e) => setEditForm((f) => ({ ...f, category: e.target.value }))}
               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl text-gray-950 text-sm outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-150"
             >
-              {CATEGORIES.map((cat) => (
+              {allCategories.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
