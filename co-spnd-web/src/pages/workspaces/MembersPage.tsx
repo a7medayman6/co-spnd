@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { UserPlus, Users, CheckCircle2, Wallet, Pencil, Check, X } from 'lucide-react'
+import { UserPlus, Users, CheckCircle2, Wallet, Pencil, Check, X, Plus } from 'lucide-react'
 import { workspacesService } from '../../services/workspaces.service'
 import { analyticsService } from '../../services/analytics.service'
 import { useAuth } from '../../hooks/useAuth'
@@ -50,17 +50,24 @@ export function MembersPage() {
   const [showBudget, setShowBudget] = useState(false)
   const [budgetInput, setBudgetInput] = useState('')
 
+  // Categories
+  const [customCategories, setCustomCategories] = useState<string[]>([])
+  const [newCategoryInput, setNewCategoryInput] = useState('')
+  const [addingCategory, setAddingCategory] = useState(false)
+  const [categoryLoading, setCategoryLoading] = useState(false)
+
   const load = useCallback(async () => {
     if (!workspaceId) return
     setIsError(false)
     const now = new Date()
     const { from, to } = getMonthRange(now)
     try {
-      const [membersData, splitData, analyticsData, workspaces] = await Promise.all([
+      const [membersData, splitData, analyticsData, workspaces, categoriesData] = await Promise.all([
         workspacesService.getMembers(workspaceId),
         workspacesService.getSplittingConfig(workspaceId),
         analyticsService.get(workspaceId, from, to),
         workspacesService.list(),
+        workspacesService.getCategories(workspaceId),
       ])
       setMembers(membersData)
       setSplitConfig(splitData)
@@ -69,6 +76,7 @@ export function MembersPage() {
       setWorkspace(ws)
       setCurrency(ws?.currency ?? 'USD')
       setIsCreator(ws?.createdBy?.toString() === user?.id)
+      setCustomCategories(categoriesData)
     } catch {
       setIsError(true)
     }
@@ -201,6 +209,32 @@ export function MembersPage() {
     setEmail('')
     setInviteError('')
     setInviteSuccess(false)
+  }
+
+  async function handleAddCategory() {
+    const trimmed = newCategoryInput.trim()
+    if (!trimmed || !workspaceId) return
+    setCategoryLoading(true)
+    try {
+      const updated = await workspacesService.updateCategories(workspaceId, [trimmed], [])
+      setCustomCategories(updated)
+      setNewCategoryInput('')
+      setAddingCategory(false)
+    } catch {
+      // keep input open, user can retry
+    } finally {
+      setCategoryLoading(false)
+    }
+  }
+
+  async function handleRemoveCategory(cat: string) {
+    if (!workspaceId) return
+    try {
+      const updated = await workspacesService.updateCategories(workspaceId, [], [cat])
+      setCustomCategories(updated)
+    } catch {
+      // silently ignore
+    }
   }
 
   return (
@@ -404,6 +438,75 @@ export function MembersPage() {
                 {budget !== null ? 'Edit' : 'Set'}
               </span>
             </button>
+          </section>
+
+          {/* ── Categories ──────────────────────────────────────── */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold tracking-[0.12em] uppercase text-[#B5ADA4]">Custom Categories</p>
+              {!addingCategory && (
+                <button
+                  onClick={() => setAddingCategory(true)}
+                  className="text-xs font-semibold text-[#8C8479] hover:text-[#0E0C0A] transition-colors flex items-center gap-1"
+                >
+                  <Plus size={12} />
+                  Add
+                </button>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl border border-[#EDE9E1] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+              {customCategories.length === 0 && !addingCategory ? (
+                <div className="px-4 py-4 text-sm text-[#B5ADA4] text-center">No custom categories yet</div>
+              ) : (
+                <div className="divide-y divide-[#F2F0EB]">
+                  {customCategories.map((cat) => (
+                    <div key={cat} className="px-4 py-3 flex items-center justify-between">
+                      <span className="text-[15px] font-medium text-[#0E0C0A]">{cat}</span>
+                      <button
+                        onClick={() => handleRemoveCategory(cat)}
+                        className="w-7 h-7 flex items-center justify-center text-[#B5ADA4] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {addingCategory && (
+                <div className="px-4 py-3 border-t border-[#F2F0EB] flex items-center gap-2">
+                  <input
+                    autoFocus
+                    value={newCategoryInput}
+                    onChange={(e) => setNewCategoryInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddCategory()
+                      if (e.key === 'Escape') { setAddingCategory(false); setNewCategoryInput('') }
+                    }}
+                    placeholder="e.g. Groceries"
+                    className="flex-1 text-sm text-[#0E0C0A] bg-transparent outline-none"
+                  />
+                  <button
+                    onClick={handleAddCategory}
+                    disabled={!newCategoryInput.trim() || categoryLoading}
+                    className="w-7 h-7 flex items-center justify-center bg-[#0E0C0A] text-white rounded-lg disabled:opacity-40 transition-colors"
+                  >
+                    {categoryLoading ? (
+                      <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Check size={12} />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => { setAddingCategory(false); setNewCategoryInput('') }}
+                    className="w-7 h-7 flex items-center justify-center text-[#B5ADA4] hover:text-[#8C8479] rounded-lg transition-colors"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
+            </div>
           </section>
 
         </div>
