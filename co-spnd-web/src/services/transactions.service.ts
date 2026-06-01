@@ -1,6 +1,18 @@
 import api from './api'
 import type { Transaction, CreateTransactionDto, UpdateTransactionDto } from '../types'
 
+export interface ImportTransactionItem {
+  amount: number
+  category: string
+  description?: string
+  date?: string
+}
+
+export interface ImportResult {
+  imported: number
+  errors: { row: number; message: string }[]
+}
+
 export const transactionsService = {
   async list(workspaceId: string, from?: string, to?: string): Promise<Transaction[]> {
     const params: Record<string, string> = {}
@@ -28,5 +40,13 @@ export const transactionsService = {
 
   async delete(transactionId: string): Promise<void> {
     await api.delete(`/transactions/${transactionId}`)
+  },
+
+  async importTransactions(workspaceId: string, transactions: ImportTransactionItem[]): Promise<ImportResult> {
+    const { data } = await api.post<ImportResult>(
+      `/workspaces/${workspaceId}/transactions/import`,
+      { transactions }
+    )
+    return data
   },
 }

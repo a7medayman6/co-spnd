@@ -17,21 +17,12 @@ export const workspacesService = {
     return data
   },
 
-  async invite(workspaceId: string, email: string): Promise<{ success: boolean }> {
-    const { data } = await api.post<{ success: boolean }>(
-      `/workspaces/${workspaceId}/invite`,
-      { email }
-    )
-    return data
+  async invite(workspaceId: string, email: string): Promise<void> {
+    await api.post(`/workspaces/${workspaceId}/invite`, { email })
   },
 
   async getMembers(workspaceId: string): Promise<WorkspaceMember[]> {
     const { data } = await api.get<WorkspaceMember[]>(`/workspaces/${workspaceId}/members`)
-    return data
-  },
-
-  async leave(workspaceId: string): Promise<{ deleted: boolean }> {
-    const { data } = await api.delete<{ deleted: boolean }>(`/workspaces/${workspaceId}/leave`)
     return data
   },
 
@@ -40,14 +31,23 @@ export const workspacesService = {
     return data
   },
 
-  async updateSplittingConfig(
-    workspaceId: string,
-    splittingConfig: { userId: string; percentage: number }[],
-  ): Promise<SplitEntry[]> {
-    const { data } = await api.patch<SplitEntry[]>(
-      `/workspaces/${workspaceId}/splitting-config`,
-      { splittingConfig },
-    )
+  async updateSplittingConfig(workspaceId: string, entries: { userId: string; percentage: number }[]): Promise<SplitEntry[]> {
+    const { data } = await api.patch<SplitEntry[]>(`/workspaces/${workspaceId}/splitting-config`, { splittingConfig: entries })
     return data
+  },
+
+  async leave(workspaceId: string): Promise<{ deleted: boolean }> {
+    const { data } = await api.delete<{ deleted: boolean }>(`/workspaces/${workspaceId}/leave`)
+    return data
+  },
+
+  async getCategories(workspaceId: string): Promise<string[]> {
+    const { data } = await api.get<{ customCategories: string[] }>(`/workspaces/${workspaceId}/categories`)
+    return data.customCategories
+  },
+
+  async updateCategories(workspaceId: string, add: string[], remove: string[]): Promise<string[]> {
+    const { data } = await api.patch<{ customCategories: string[] }>(`/workspaces/${workspaceId}/categories`, { add, remove })
+    return data.customCategories
   },
 }
