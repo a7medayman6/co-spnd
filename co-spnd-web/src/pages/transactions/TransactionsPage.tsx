@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Receipt, Download, ChevronLeft, ChevronRight, SlidersHorizontal, X, Clipboard } from 'lucide-react'
+import { Plus, Trash2, Pencil, Receipt, Download, ChevronLeft, ChevronRight, SlidersHorizontal, X, Clipboard, Upload, CheckCircle2 } from 'lucide-react'
 import { transactionsService } from '../../services/transactions.service'
 import { workspacesService } from '../../services/workspaces.service'
 import { analyticsService } from '../../services/analytics.service'
-import { exportTransactionsToCsv } from '../../utils/csv'
+import { exportTransactionsToCsv, parseImportCsv } from '../../utils/csv'
 import { getBudget } from '../../utils/budget'
 import { useAuth } from '../../hooks/useAuth'
 import type { Transaction, Workspace, WorkspaceMember, UpdateTransactionDto } from '../../types'
@@ -67,6 +67,9 @@ export function TransactionsPage() {
   const [filterCategory, setFilterCategory] = useState('')
   const [filterSpenderId, setFilterSpenderId] = useState('')
   const [pasteMode, setPasteMode] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{ imported: number; errors: { row: number; message: string }[] } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const selectedDate = new Date()
   selectedDate.setMonth(selectedDate.getMonth() + monthOffset)
@@ -175,6 +178,54 @@ export function TransactionsPage() {
     const safeName = (workspace?.name ?? 'workspace').replace(/\s+/g, '-')
     const filename = `co-spnd-${safeName}-${from}.csv`
     exportTransactionsToCsv(filteredTransactions, workspace?.currency ?? 'USD', filename)
+  }
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (!file || !workspaceId) return
+
+    setImporting(true)
+    try {
+      const text = await file.text()
+      const { rows, errors: parseErrors } = parseImportCsv(text)
+
+      if (rows.length === 0) {
+        setImportResult({ imported: 0, errors: parseErrors })
+        return
+      }
+
+      // Collect unrecognized categories and auto-create them
+      const existingCustom = await workspacesService.getCategories(workspaceId)
+      const knownCategories = new Set([...CATEGORIES, ...existingCustom])
+      const newCats = [...new Set(rows.map((r) => r.category).filter((c) => !knownCategories.has(c)))]
+      if (newCats.length > 0) {
+        await workspacesService.updateCategories(workspaceId, newCats, [])
+      }
+
+      const result = await transactionsService.importTransactions(
+        workspaceId,
+        rows.map((r) => ({
+          amount: r.amount,
+          category: r.category,
+          description: r.description || undefined,
+          date: r.date,
+        })),
+      )
+
+      setImportResult({
+        imported: result.imported,
+        errors: [...parseErrors, ...result.errors],
+      })
+
+      if (result.imported > 0) {
+        load()
+      }
+    } catch {
+      setImportResult({ imported: 0, errors: [{ row: 0, message: 'Failed to import. Please try again.' }] })
+    } finally {
+      setImporting(false)
+    }
   }
 
   const filteredTransactions = transactions.filter((t) => {
@@ -389,6 +440,18 @@ export function TransactionsPage() {
       {/* FAB cluster */}
       <div className="fixed bottom-24 right-5 lg:bottom-8 flex flex-col items-center gap-2.5 z-30">
         <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={importing}
+          className="w-12 h-12 bg-white border border-[#EDE9E1] text-emerald-600 rounded-2xl shadow-md hover:bg-emerald-50 active:scale-95 transition-all duration-150 flex items-center justify-center disabled:opacity-50"
+          aria-label="Import CSV"
+        >
+          {importing ? (
+            <span className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Upload size={18} />
+          )}
+        </button>
+        <button
           onClick={() => { setPasteMode(true); setShowAdd(true) }}
           className="w-12 h-12 bg-white border border-[#EDE9E1] text-[#863bff] rounded-2xl shadow-md hover:bg-[#F3F0FF] active:scale-95 transition-all duration-150 flex items-center justify-center"
           aria-label="Paste bank message"
@@ -403,6 +466,15 @@ export function TransactionsPage() {
           <Plus size={22} />
         </button>
       </div>
+
+      {/* Hidden file input for CSV import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        className="hidden"
+        onChange={handleImportFile}
+      />
 
       {/* Add transaction sheet */}
       <AddTransactionSheet
@@ -507,6 +579,39 @@ export function TransactionsPage() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Import result modal */}
+      <Modal
+        isOpen={Boolean(importResult)}
+        onClose={() => setImportResult(null)}
+        title="Import complete"
+      >
+        {importResult && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 px-4 py-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl">
+              <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
+              <p className="text-sm font-semibold text-emerald-700">
+                {importResult.imported} transaction{importResult.imported !== 1 ? 's' : ''} imported successfully
+              </p>
+            </div>
+            {importResult.errors.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-bold tracking-[0.1em] uppercase text-[#B5ADA4]">
+                  {importResult.errors.length} row{importResult.errors.length !== 1 ? 's' : ''} skipped
+                </p>
+                <div className="max-h-48 overflow-y-auto flex flex-col gap-1.5">
+                  {importResult.errors.map((err, i) => (
+                    <p key={i} className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-xl">
+                      {err.message}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+            <Button onClick={() => setImportResult(null)} className="w-full">Done</Button>
+          </div>
+        )}
       </Modal>
     </div>
   )
