@@ -138,11 +138,16 @@ export interface BalanceEntry {
 
 export const CATEGORIES = [
   'Food',
+  'Groceries',
+  'Takeaway',
   'Transport',
   'Accommodation',
   'Entertainment',
   'Shopping',
   'Health',
+  'Bills',
+  'Utilities',
+  'Subscriptions',
   'Other',
 ] as const
 

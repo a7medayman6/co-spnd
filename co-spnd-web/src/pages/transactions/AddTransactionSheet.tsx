@@ -44,7 +44,9 @@ export function AddTransactionSheet({
   const [isCreditWarning, setIsCreditWarning] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [pasteText, setPasteText] = useState('')
+
   const pasteRef = useRef<HTMLTextAreaElement>(null)
+  const descriptionRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isOpen && user) {
@@ -90,7 +92,6 @@ export function AddTransactionSheet({
         setShowPasteArea(true)
       }
     } catch {
-      // Permission denied or API unavailable — fall back to manual textarea
       setShowPasteArea(true)
     }
   }
@@ -162,9 +163,10 @@ export function AddTransactionSheet({
 
   return (
     <BottomSheet isOpen={isOpen} onClose={handleClose} title="Add expense">
-      <div className="flex flex-col gap-5">
+      {/* Scrollable form body — extra bottom padding so content clears the sticky button */}
+      <div className="flex flex-col gap-5 pb-24">
 
-        {/* ── Paste-to-fill zone ─────────────────────────────────────── */}
+        {/* ── Paste-to-fill zone ─────────────────────────────────── */}
         {!parsedFrom && !showPasteArea && (
           <button
             type="button"
@@ -232,7 +234,7 @@ export function AddTransactionSheet({
           </div>
         )}
 
-        {/* ── Amount ─────────────────────────────────────────────────── */}
+        {/* ── Amount ─────────────────────────────────────────────── */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-bold tracking-[0.12em] uppercase text-gray-400">
             Amount
@@ -247,12 +249,22 @@ export function AddTransactionSheet({
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (showMore) {
+                    descriptionRef.current?.focus()
+                  } else {
+                    ;(e.target as HTMLInputElement).blur()
+                  }
+                }
+              }}
               className="flex-1 px-2 py-4 text-4xl font-money font-semibold text-gray-950 bg-transparent outline-none placeholder-gray-200 min-w-0"
             />
           </div>
         </div>
 
-        {/* ── Category chips ──────────────────────────────────────────── */}
+        {/* ── Category chips ──────────────────────────────────────── */}
         <div className="flex flex-col gap-2">
           <label className="text-xs font-bold tracking-[0.12em] uppercase text-gray-400">
             Category
@@ -275,7 +287,7 @@ export function AddTransactionSheet({
           </div>
         </div>
 
-        {/* ── More details ────────────────────────────────────────────── */}
+        {/* ── More details ────────────────────────────────────────── */}
         <button
           type="button"
           onClick={() => setShowMore(!showMore)}
@@ -288,6 +300,7 @@ export function AddTransactionSheet({
         {showMore && (
           <div className="flex flex-col gap-4 pt-1 border-t border-gray-100">
             <Input
+              ref={descriptionRef}
               label="Description"
               placeholder="What was this for?"
               value={description}
@@ -319,13 +332,15 @@ export function AddTransactionSheet({
             )}
           </div>
         )}
+      </div>
 
+      {/* ── Sticky submit footer ────────────────────────────────── */}
+      <div className="sticky bottom-0 -mx-5 px-5 pt-3 pb-2 bg-white border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.05)]">
         {error && (
-          <p className="text-sm text-red-500 font-medium bg-red-50 px-4 py-2.5 rounded-xl">
+          <p className="text-sm text-red-500 font-medium bg-red-50 px-4 py-2.5 rounded-xl mb-3">
             {error}
           </p>
         )}
-
         <Button onClick={handleSubmit} isLoading={isLoading} size="lg" className="w-full">
           Add expense
         </Button>
