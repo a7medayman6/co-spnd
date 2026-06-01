@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsNumber, IsString, IsOptional, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, IsOptional, IsDateString, IsArray, ValidateNested, ArrayMinSize } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateTransactionDto {
   @IsNotEmpty()
@@ -50,4 +51,30 @@ export class UpdateTransactionDto {
   @IsOptional()
   @IsString()
   paymentMethod?: string;
+}
+
+export class ImportTransactionItemDto {
+  @IsNotEmpty()
+  @IsNumber()
+  amount: number;
+
+  @IsNotEmpty()
+  @IsString()
+  category: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsDateString()
+  date?: string;
+}
+
+export class BulkImportDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @ArrayMinSize(1)
+  @Type(() => ImportTransactionItemDto)
+  transactions: ImportTransactionItemDto[];
 }

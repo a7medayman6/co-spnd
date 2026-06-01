@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { TransactionsService } from './transactions.service';
-import { CreateTransactionDto, UpdateTransactionDto } from './transaction.dto';
+import { CreateTransactionDto, UpdateTransactionDto, BulkImportDto } from './transaction.dto';
 import { WorkspaceMemberGuard } from '../workspaces/workspace-member.guard';
 
 @Controller()
@@ -50,6 +50,16 @@ export class TransactionsController {
       createTransactionDto,
     );
     return this.serializeTransaction(transaction);
+  }
+
+  @Post('workspaces/:workspaceId/transactions/import')
+  @UseGuards(WorkspaceMemberGuard)
+  async bulkImport(
+    @Param('workspaceId') workspaceId: string,
+    @Request() req: any,
+    @Body() dto: BulkImportDto,
+  ) {
+    return this.transactionsService.bulkImport(workspaceId, req.user.userId, dto.transactions);
   }
 
   @Get('workspaces/:workspaceId/transactions')

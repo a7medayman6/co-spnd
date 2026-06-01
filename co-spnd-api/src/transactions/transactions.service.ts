@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Transaction, TransactionDocument } from './transaction.schema';
-import { CreateTransactionDto, UpdateTransactionDto } from './transaction.dto';
+import { CreateTransactionDto, UpdateTransactionDto, ImportTransactionItemDto } from './transaction.dto';
 
 @Injectable()
 export class TransactionsService {
@@ -93,5 +93,36 @@ export class TransactionsService {
     }
 
     await this.transactionModel.findByIdAndDelete(transactionId).exec();
+  }
+
+  async bulkImport(
+    workspaceId: string,
+    userId: string,
+    items: ImportTransactionItemDto[],
+  ): Promise<{ imported: number; errors: { row: number; message: string }[] }> {
+    let imported = 0;
+    const errors: { row: number; message: string }[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      try {
+        const transaction = new this.transactionModel({
+          amount: item.amount,
+          category: item.category,
+          description: item.description,
+          date: item.date ? new Date(item.date) : new Date(),
+          spenderId: new Types.ObjectId(userId),
+          createdBy: new Types.ObjectId(userId),
+          workspaceId: new Types.ObjectId(workspaceId),
+          paymentMethod: 'CASH',
+        });
+        await transaction.save();
+        imported++;
+      } catch (err: any) {
+        errors.push({ row: i + 1, message: err?.message ?? 'Unknown error' });
+      }
+    }
+
+    return { imported, errors };
   }
 }
