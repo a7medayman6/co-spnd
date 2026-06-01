@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 import { AppLayout } from './components/layout/AppLayout'
@@ -15,6 +16,7 @@ import { ProfilePage } from './pages/profile/ProfilePage'
 export default function App() {
   return (
     <AuthProvider>
+      <Analytics />
       <BrowserRouter>
         <Routes>
           {/* Public */}
