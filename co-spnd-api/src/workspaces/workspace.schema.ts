@@ -28,6 +28,9 @@ export class Workspace {
     default: [],
   })
   splittingConfig: { userId: Types.ObjectId; percentage: number }[];
+
+  @Prop({ type: [String], default: [] })
+  customCategories: string[];
 }
 
 export const WorkspaceSchema = SchemaFactory.createForClass(Workspace);
