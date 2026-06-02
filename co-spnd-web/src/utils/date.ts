@@ -1,6 +1,6 @@
 export function formatDate(dateStr: string): string {
   const d = new Date(dateStr)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 }
 
 export function formatCurrency(amount: number, currency = 'USD'): string {
@@ -14,9 +14,11 @@ export function formatCurrency(amount: number, currency = 'USD'): string {
 export function getMonthRange(date: Date = new Date()): { from: string; to: string } {
   const year = date.getFullYear()
   const month = date.getMonth()
-  const from = new Date(year, month, 1).toISOString().split('T')[0]
-  const to = new Date(year, month + 1, 0).toISOString().split('T')[0]
-  return { from, to }
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return { from: fmt(firstDay), to: fmt(lastDay) }
 }
 
 export function toInputDateValue(dateStr?: string): string {
