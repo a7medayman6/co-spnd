@@ -523,7 +523,7 @@ Expected shape:
   "months": ["2026-03", "2026-04", "2026-05"],
   "series": [
     { "category": "Food", "data": [430, 520, 380] },
-    { "category": "Transport", "data": [120, 90, 150] },
+    { "category": "Transportation", "data": [120, 90, 150] },
     { "category": "Entertainment", "data": [0, 200, 50] }
   ]
 }
@@ -1424,7 +1424,7 @@ Returns top 3 categories by total spend, broken down by month.
   "months": ["2026-03", "2026-04", "2026-05"],
   "series": [
     { "category": "Food", "data": [430, 520, 380] },
-    { "category": "Transport", "data": [120, 90, 150] },
+    { "category": "Transportation", "data": [120, 90, 150] },
     { "category": "Entertainment", "data": [0, 200, 50] }
   ]
 }

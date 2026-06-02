@@ -7,13 +7,13 @@ import { useAuth } from '../../hooks/useAuth'
 
 const categories = [
   { label: 'Food', icon: <Utensils size={12} />, bar: 72, amount: '€312' },
-  { label: 'Transport', icon: <Car size={12} />, bar: 44, amount: '€190' },
+  { label: 'Transportation', icon: <Car size={12} />, bar: 44, amount: '€190' },
   { label: 'Shopping', icon: <ShoppingBag size={12} />, bar: 28, amount: '€121' },
 ]
 
 const transactions = [
   { desc: 'Dinner at Tasca do Chico', category: 'Food', who: 'Ahmed', amount: '€42.00' },
-  { desc: 'Metro day cards', category: 'Transport', who: 'Sara', amount: '€12.50' },
+  { desc: 'Metro day cards', category: 'Transportation', who: 'Sara', amount: '€12.50' },
   { desc: 'Airbnb — night 2', category: 'Accommodation', who: 'Ahmed', amount: '€110.00' },
   { desc: 'Pastéis de Belém', category: 'Food', who: 'Mona', amount: '€8.80' },
 ]
@@ -110,7 +110,7 @@ function PasteToLogShowcase() {
             <div className="mb-4">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#B5ADA4] mb-2">Category</p>
               <div className="flex flex-wrap gap-1.5">
-                {['Food', 'Transport', 'Shopping'].map((cat) => (
+                {['Food', 'Transportation', 'Shopping'].map((cat) => (
                   <span
                     key={cat}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
@@ -462,7 +462,7 @@ export function LandingPage() {
               <div className="space-y-2.5">
                 {[
                   { category: 'Food', desc: 'Dinner at Tasca do Chico', amount: '€42.00', who: 'Ahmed' },
-                  { category: 'Transport', desc: 'Metro day cards', amount: '€12.50', who: 'Sara' },
+                  { category: 'Transportation', desc: 'Metro day cards', amount: '€12.50', who: 'Sara' },
                   { category: 'Accommodation', desc: 'Airbnb — night 2', amount: '€110.00', who: 'Ahmed' },
                   { category: 'Food', desc: 'Pastéis de Belém', amount: '€8.80', who: 'Mona' },
                 ].map((tx) => (

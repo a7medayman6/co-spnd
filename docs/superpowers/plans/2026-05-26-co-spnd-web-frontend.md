@@ -315,7 +315,7 @@ export interface Analytics {
 
 export const CATEGORIES = [
   'Food',
-  'Transport',
+  'Transportation',
   'Accommodation',
   'Entertainment',
   'Shopping',
@@ -928,7 +928,7 @@ export function PageLoader() {
 
 const CATEGORY_COLORS: Record<string, string> = {
   Food: 'bg-orange-100 text-orange-700',
-  Transport: 'bg-blue-100 text-blue-700',
+  Transportation: 'bg-blue-100 text-blue-700',
   Accommodation: 'bg-purple-100 text-purple-700',
   Entertainment: 'bg-pink-100 text-pink-700',
   Shopping: 'bg-green-100 text-green-700',

@@ -95,7 +95,7 @@ Place it in the header row alongside the workspace name / month title area — c
 ```
 "Date","Amount","Currency","Category","Description","Spender"
 "2026-05-01","120.5","AED","Food","Dinner","Ahmed"
-"2026-05-03","45","AED","Transport","","Sara"
+"2026-05-03","45","AED","Transportation","","Sara"
 ```
 
 - All cells quoted per RFC 4180
