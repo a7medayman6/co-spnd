@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { analyticsService } from '../../services/analytics.service'
 import { workspacesService } from '../../services/workspaces.service'
+import { cacheGet, cacheSet } from '../../utils/cache'
 import type {
   Analytics,
   Workspace,
@@ -18,6 +19,7 @@ import type {
   TopExpensesResponse,
   ComparisonResponse,
   CategoryTrendsResponse,
+  PaymentMethodAnalyticsResponse,
 } from '../../types'
 import { formatCurrency, getMonthRange, getMonthLabel } from '../../utils/date'
 import { Card } from '../../components/ui/Card'
@@ -45,6 +47,7 @@ export function AnalyticsPage() {
   const [topExpenses, setTopExpenses] = useState<TopExpensesResponse | null>(null)
   const [comparison, setComparison] = useState<ComparisonResponse | null>(null)
   const [categoryTrends, setCategoryTrends] = useState<CategoryTrendsResponse | null>(null)
+  const [paymentMethodData, setPaymentMethodData] = useState<PaymentMethodAnalyticsResponse | null>(null)
   const [granularity, setGranularity] = useState<'day' | 'month'>('day')
 
   const currentDate = new Date()
@@ -55,25 +58,33 @@ export function AnalyticsPage() {
 
   const load = useCallback(async () => {
     if (!workspaceId) return
-    setIsLoading(true)
     try {
-      const [data, wsList, topData, compData, catData] = await Promise.all([
+      const [data, wsList, topData, compData, catData, pmData] = await Promise.all([
         analyticsService.get(workspaceId, from, to),
         workspacesService.list(),
         analyticsService.getTopExpenses(workspaceId, from, to),
         analyticsService.getComparison(workspaceId),
         analyticsService.getCategoryTrends(workspaceId, from, to),
+        analyticsService.getPaymentMethodAnalytics(workspaceId, from, to),
       ])
+      cacheSet(`workspace:${workspaceId}:analytics:${from}:${to}`, data)
+      cacheSet('workspaces', wsList)
+      cacheSet(`workspace:${workspaceId}:analytics:top:${from}:${to}`, topData)
+      cacheSet(`workspace:${workspaceId}:analytics:comparison`, compData)
+      cacheSet(`workspace:${workspaceId}:analytics:category-trends:${from}:${to}`, catData)
+      cacheSet(`workspace:${workspaceId}:analytics:payment-methods:${from}:${to}`, pmData)
       setAnalytics(data)
       setWorkspace(wsList.find((w) => w.id === workspaceId) ?? null)
       setTopExpenses(topData)
       setComparison(compData)
       setCategoryTrends(catData)
+      setPaymentMethodData(pmData)
     } catch {
       setAnalytics(null)
       setTopExpenses(null)
       setComparison(null)
       setCategoryTrends(null)
+      setPaymentMethodData(null)
     } finally {
       setIsLoading(false)
     }
@@ -81,17 +92,39 @@ export function AnalyticsPage() {
 
   const loadTrends = useCallback(async () => {
     if (!workspaceId) return
+    const key = `workspace:${workspaceId}:analytics:trends:${granularity}:${from}:${to}`
+    const cached = cacheGet<TrendsResponse>(key)
+    if (cached) setTrends(cached)
     try {
       const trendsData = await analyticsService.getTrends(workspaceId, granularity, from, to)
+      cacheSet(key, trendsData)
       setTrends(trendsData)
     } catch {
-      setTrends(null)
+      if (!cached) setTrends(null)
     }
   }, [workspaceId, from, to, granularity])
 
   useEffect(() => {
+    if (!workspaceId) return
+    const cachedAnalytics = cacheGet<Analytics>(`workspace:${workspaceId}:analytics:${from}:${to}`)
+    const cachedWs = cacheGet<Workspace[]>('workspaces')
+    if (cachedAnalytics && cachedWs) {
+      setAnalytics(cachedAnalytics)
+      setWorkspace(cachedWs.find((w) => w.id === workspaceId) ?? null)
+      setIsLoading(false)
+      const cachedTop = cacheGet<TopExpensesResponse>(`workspace:${workspaceId}:analytics:top:${from}:${to}`)
+      const cachedComp = cacheGet<ComparisonResponse>(`workspace:${workspaceId}:analytics:comparison`)
+      const cachedCat = cacheGet<CategoryTrendsResponse>(`workspace:${workspaceId}:analytics:category-trends:${from}:${to}`)
+      const cachedPm = cacheGet<PaymentMethodAnalyticsResponse>(`workspace:${workspaceId}:analytics:payment-methods:${from}:${to}`)
+      if (cachedTop) setTopExpenses(cachedTop)
+      if (cachedComp) setComparison(cachedComp)
+      if (cachedCat) setCategoryTrends(cachedCat)
+      if (cachedPm) setPaymentMethodData(cachedPm)
+    } else {
+      setIsLoading(true)
+    }
     load()
-  }, [load])
+  }, [load, workspaceId, from, to])
 
   useEffect(() => {
     loadTrends()
@@ -276,6 +309,47 @@ export function AnalyticsPage() {
                       </span>
                     </div>
                   ))}
+              </div>
+            </Card>
+          )}
+
+          {/* By payment method */}
+          {paymentMethodData && paymentMethodData.byPaymentMethod.length > 0 && (
+            <Card>
+              <p className="text-xs font-bold tracking-[0.12em] uppercase text-gray-400 mb-4">
+                By payment method
+              </p>
+              <div className="flex flex-col gap-3.5">
+                {paymentMethodData.byPaymentMethod
+                  .sort((a, b) => b.total - a.total)
+                  .map((pm) => {
+                    const pct = analytics!.total > 0 ? (pm.total / analytics!.total) * 100 : 0
+                    return (
+                      <div key={pm.paymentMethod}>
+                        <div className="flex justify-between items-baseline mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-700">
+                              {pm.paymentMethod === 'VISA' ? 'Visa / Card' : 'Cash'}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {pm.count} {pm.count === 1 ? 'transaction' : 'transactions'}
+                            </span>
+                          </div>
+                          <span className="font-money text-sm font-semibold text-gray-950">
+                            {formatCurrency(pm.total, currency)}
+                          </span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ${
+                              pm.paymentMethod === 'VISA' ? 'bg-indigo-500' : 'bg-gray-800'
+                            }`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
               </div>
             </Card>
           )}

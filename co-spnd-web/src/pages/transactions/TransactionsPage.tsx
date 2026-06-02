@@ -6,6 +6,7 @@ import { workspacesService } from '../../services/workspaces.service'
 import { analyticsService } from '../../services/analytics.service'
 import { exportTransactionsToCsv, parseImportCsv } from '../../utils/csv'
 import { getBudget } from '../../utils/budget'
+import { cacheGet, cacheSet, cacheInvalidate } from '../../utils/cache'
 import { useAuth } from '../../hooks/useAuth'
 import type { Transaction, Workspace, WorkspaceMember, UpdateTransactionDto } from '../../types'
 import { CATEGORIES } from '../../types'
@@ -86,6 +87,10 @@ export function TransactionsPage() {
       workspacesService.getMembers(workspaceId),
       workspacesService.getCategories(workspaceId),
     ])
+    cacheSet(`workspace:${workspaceId}:txs:${from}:${to}`, txs)
+    cacheSet('workspaces', wsList)
+    cacheSet(`workspace:${workspaceId}:members`, memberList)
+    cacheSet(`workspace:${workspaceId}:categories`, cats)
     setTransactions(txs)
     setMembers(memberList)
     setCustomCategories(cats)
@@ -120,22 +125,41 @@ export function TransactionsPage() {
   }, [workspaceId, from, to, isCurrentMonth])
 
   useEffect(() => {
-    setIsLoading(true)
-    load().finally(() => setIsLoading(false))
-  }, [load])
+    if (!workspaceId) return
+    const cachedTxs = cacheGet<Transaction[]>(`workspace:${workspaceId}:txs:${from}:${to}`)
+    const cachedWs = cacheGet<Workspace[]>('workspaces')
+    if (cachedTxs && cachedWs) {
+      const ws = cachedWs.find((w) => w.id === workspaceId) ?? null
+      setTransactions(cachedTxs)
+      setWorkspace(ws)
+      setMembers(cacheGet<WorkspaceMember[]>(`workspace:${workspaceId}:members`) ?? [])
+      setCustomCategories(cacheGet<string[]>(`workspace:${workspaceId}:categories`) ?? [])
+      setBudget(ws ? getBudget(workspaceId) : null)
+      setIsLoading(false)
+      load()
+    } else {
+      setIsLoading(true)
+      load().finally(() => setIsLoading(false))
+    }
+  }, [load, workspaceId, from, to])
 
   useEffect(() => {
     loadComparison()
   }, [loadComparison])
 
   function handleAdded(tx: Transaction) {
-    // Only add to the list if it falls within the current viewed month
     const txDate = new Date(tx.date)
     const viewStart = new Date(from)
     const viewEnd = new Date(to)
     if (txDate >= viewStart && txDate <= viewEnd) {
-      setTransactions((prev) => [tx, ...prev])
+      setTransactions((prev) => {
+        const next = [tx, ...prev]
+        cacheSet(`workspace:${workspaceId ?? ''}:txs:${from}:${to}`, next)
+        return next
+      })
     }
+    cacheInvalidate(`workspace:${workspaceId ?? ''}:analytics:`)
+    cacheInvalidate('analytics:me:')
   }
 
   function openEdit(tx: Transaction) {
@@ -155,7 +179,13 @@ export function TransactionsPage() {
     setEditLoading(true)
     try {
       const updated = await transactionsService.update(editTarget.id, editForm)
-      setTransactions((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+      setTransactions((prev) => {
+        const next = prev.map((t) => (t.id === updated.id ? updated : t))
+        cacheSet(`workspace:${workspaceId ?? ''}:txs:${from}:${to}`, next)
+        return next
+      })
+      cacheInvalidate(`workspace:${workspaceId ?? ''}:analytics:`)
+      cacheInvalidate('analytics:me:')
       setEditTarget(null)
     } catch {
       // keep modal open, user can retry
@@ -169,7 +199,13 @@ export function TransactionsPage() {
     setDeleteLoading(true)
     try {
       await transactionsService.delete(deleteTarget.id)
-      setTransactions((prev) => prev.filter((t) => t.id !== deleteTarget.id))
+      setTransactions((prev) => {
+        const next = prev.filter((t) => t.id !== deleteTarget.id)
+        cacheSet(`workspace:${workspaceId ?? ''}:txs:${from}:${to}`, next)
+        return next
+      })
+      cacheInvalidate(`workspace:${workspaceId ?? ''}:analytics:`)
+      cacheInvalidate('analytics:me:')
       setDeleteTarget(null)
     } catch {
       // keep modal open
@@ -224,6 +260,9 @@ export function TransactionsPage() {
       })
 
       if (result.imported > 0) {
+        cacheInvalidate(`workspace:${workspaceId}:txs:`)
+        cacheInvalidate(`workspace:${workspaceId}:analytics:`)
+        cacheInvalidate('analytics:me:')
         load()
       }
     } catch {

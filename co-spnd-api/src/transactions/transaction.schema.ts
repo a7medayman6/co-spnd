@@ -26,7 +26,7 @@ export class Transaction {
   @Prop({ type: Types.ObjectId, ref: 'Workspace', required: true })
   workspaceId: Types.ObjectId;
 
-  @Prop({ required: true, enum: ['CASH', 'VISA'], default: 'CASH' })
+  @Prop({ required: true, enum: ['CASH', 'VISA'], default: 'VISA' })
   paymentMethod: string;
 }
 

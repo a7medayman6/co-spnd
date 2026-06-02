@@ -382,6 +382,34 @@ export class AnalyticsService {
     };
   }
 
+  async getPaymentMethodAnalytics(workspaceId: string, from?: string, to?: string) {
+    const matchStage: any = { workspaceId: new Types.ObjectId(workspaceId) };
+    const dateMatch = this.buildDateMatch(from, to);
+    if (dateMatch) matchStage.date = dateMatch;
+
+    const byPaymentMethod = await this.transactionModel.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: '$paymentMethod',
+          total: { $sum: '$amount' },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          paymentMethod: '$_id',
+          total: { $round: ['$total', 2] },
+          count: 1,
+          _id: 0,
+        },
+      },
+      { $sort: { total: -1 } },
+    ]);
+
+    return { byPaymentMethod };
+  }
+
   async getCategoryTrends(workspaceId: string, from?: string, to?: string) {
     const matchStage: any = { workspaceId: new Types.ObjectId(workspaceId) };
     if (from || to) {

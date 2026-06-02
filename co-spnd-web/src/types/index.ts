@@ -99,6 +99,16 @@ export interface ComparisonResponse {
   deltaPercent: number | null
 }
 
+export interface PaymentMethodAnalyticsItem {
+  paymentMethod: 'VISA' | 'CASH'
+  total: number
+  count: number
+}
+
+export interface PaymentMethodAnalyticsResponse {
+  byPaymentMethod: PaymentMethodAnalyticsItem[]
+}
+
 export interface CategoryTrendSeries {
   category: string
   data: number[]
