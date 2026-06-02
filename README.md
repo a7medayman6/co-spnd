@@ -15,6 +15,16 @@
 
 ---
 
+<p>
+  <a href="https://github.com/a7medayman6/co-spnd/stargazers"><img src="https://img.shields.io/github/stars/a7medayman6/co-spnd?style=flat-square&color=7c3aed" alt="Stars"></a>
+  <a href="https://github.com/a7medayman6/co-spnd/network/members"><img src="https://img.shields.io/github/forks/a7medayman6/co-spnd?style=flat-square&color=7c3aed" alt="Forks"></a>
+  <a href="https://github.com/a7medayman6/co-spnd/issues"><img src="https://img.shields.io/github/issues/a7medayman6/co-spnd?style=flat-square&color=7c3aed" alt="Issues"></a>
+  <a href="https://github.com/a7medayman6/co-spnd/pulls"><img src="https://img.shields.io/github/issues-pr/a7medayman6/co-spnd?style=flat-square&color=7c3aed" alt="Pull Requests"></a>
+  <img src="https://img.shields.io/github/languages/top/a7medayman6/co-spnd?style=flat-square&color=7c3aed" alt="Top Language">
+  <img src="https://img.shields.io/github/last-commit/a7medayman6/co-spnd?style=flat-square&color=7c3aed" alt="Last Commit">
+  <img src="https://img.shields.io/badge/license-MIT-7c3aed?style=flat-square" alt="License">
+</p>
+
 ## What Is Co-Spnd?
 
 Co-Spnd is a minimalist shared finance app for tracking group expenses. Built for couples, roommates, and travel groups who want fast, low-friction expense logging with clear analytics — no bloat, no noise.

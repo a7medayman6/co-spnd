@@ -90,19 +90,4 @@ Happy to answer questions or take feedback. Still early but fully functional.
 
 ## Twitter / X
 
-Just shipped **Co-Spnd** — a free shared expense tracker I built because nothing online had workspaces AND real analytics together
-
-🔗 https://co-spnd-web.vercel.app/
-
-Features:
-→ Multiple shared workspaces (trips, households, teams)
-→ Bank message parsing for auto-filling transactions
-→ Custom split %
-→ Spending trends, top expenses, month comparisons
-→ Category analytics across months
-→ CSV import + custom categories
-→ Mobile-first + installable as a PWA
-
-Open source: https://github.com/a7medayman6/co-spnd
-
-#buildinpublic #webdev #sideproject
+ I just built co-spnd 💸 expense tracker for trips, teams, whatever. workspaces ✓ analytics ✓ bank parsing ✓ free + open source. stopped complaining and built the thing i actually wanted https://co-spnd-web.vercel.app #buildinpublic
