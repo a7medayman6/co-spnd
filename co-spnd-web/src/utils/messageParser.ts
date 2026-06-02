@@ -4,6 +4,7 @@ export interface ParsedTransaction {
   description: string
   date: string
   isCredit: boolean
+  paymentMethod: 'CASH' | 'VISA'
 }
 
 export interface ParserKeyword {
@@ -176,15 +177,20 @@ function extractDescription(text: string): string {
 const CREDIT_RE =
   /\b(credited|credit|refunded|refund|received|cashback|reversal|added to your|returned)\b/i
 
+// Bank messages that mention cash withdrawal/ATM are CASH; everything else (card, POS, debit card) is VISA
+const CASH_RE = /\b(cash|atm|withdrawal|withdraw)\b/i
+
 // ─── main export ─────────────────────────────────────────────────────────────
 
 export function parseMessage(text: string, keywords?: ParserKeyword[]): ParsedTransaction {
   const kw = keywords ?? getParserKeywords()
+  const paymentMethod: 'CASH' | 'VISA' = CASH_RE.test(text) ? 'CASH' : 'VISA'
   return {
     amount: extractAmount(text),
     category: extractCategory(text, kw),
     description: extractDescription(text),
     date: extractDate(text),
     isCredit: CREDIT_RE.test(text),
+    paymentMethod,
   }
 }

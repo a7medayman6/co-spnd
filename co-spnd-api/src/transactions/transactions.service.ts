@@ -25,7 +25,7 @@ export class TransactionsService {
         : new Types.ObjectId(userId),
       createdBy: new Types.ObjectId(userId),
       workspaceId: new Types.ObjectId(workspaceId),
-      paymentMethod: createTransactionDto.paymentMethod || 'CASH',
+      paymentMethod: createTransactionDto.paymentMethod || 'VISA',
     });
     const saved = await transaction.save();
     const populated = await this.transactionModel
@@ -114,7 +114,7 @@ export class TransactionsService {
           spenderId: new Types.ObjectId(userId),
           createdBy: new Types.ObjectId(userId),
           workspaceId: new Types.ObjectId(workspaceId),
-          paymentMethod: 'CASH',
+          paymentMethod: 'VISA',
         });
         await transaction.save();
         imported++;

@@ -6,6 +6,7 @@ import type {
   ComparisonResponse,
   CategoryTrendsResponse,
   UserAnalytics,
+  PaymentMethodAnalyticsResponse,
 } from '../types'
 
 export const analyticsService = {
@@ -76,6 +77,21 @@ export const analyticsService = {
     if (to) params.to = to
     const { data } = await api.get<CategoryTrendsResponse>(
       `/workspaces/${workspaceId}/analytics/category-trends`,
+      { params }
+    )
+    return data
+  },
+
+  async getPaymentMethodAnalytics(
+    workspaceId: string,
+    from?: string,
+    to?: string,
+  ): Promise<PaymentMethodAnalyticsResponse> {
+    const params: Record<string, string> = {}
+    if (from) params.from = from
+    if (to) params.to = to
+    const { data } = await api.get<PaymentMethodAnalyticsResponse>(
+      `/workspaces/${workspaceId}/analytics/payment-methods`,
       { params }
     )
     return data

@@ -82,4 +82,14 @@ export class AnalyticsController {
   ) {
     return this.analyticsService.getCategoryTrends(workspaceId, from, to);
   }
+
+  @Get('workspaces/:workspaceId/analytics/payment-methods')
+  @UseGuards(AuthGuard('jwt'), WorkspaceMemberGuard)
+  async getPaymentMethodAnalytics(
+    @Param('workspaceId') workspaceId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.analyticsService.getPaymentMethodAnalytics(workspaceId, from, to);
+  }
 }
