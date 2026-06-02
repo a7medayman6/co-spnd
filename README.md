@@ -1,6 +1,6 @@
 <div align="center">
   <img src="docs/logo.svg" width="64" alt="Co-Spnd logo" />
-  <h1><a href="https://co-spnd-web.vercel.app/">Co-Spnd</a></h1>
+  <h1><a href="https://co-spnd.vercel.app/">Co-Spnd</a></h1>
   <p>Minimalist shared expense tracking for groups</p>
 
   🌐 **[Live App](https://co-spnd.vercel.app/)**
