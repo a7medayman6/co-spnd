@@ -53,7 +53,7 @@ export class TransactionsService {
       .find(query)
       .populate('spenderId', '_id name email')
       .populate('createdBy', '_id name email')
-      .sort({ date: -1 })
+      .sort({ date: -1, createdAt: -1 })
       .exec();
   }
 

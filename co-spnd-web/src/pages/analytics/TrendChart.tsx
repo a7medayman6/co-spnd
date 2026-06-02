@@ -11,6 +11,12 @@ import type { TrendsResponse } from '../../types'
 import { formatCurrency } from '../../utils/date'
 import { Card } from '../../components/ui/Card'
 
+function compactNumber(v: number): string {
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}k`
+  return String(Math.round(v))
+}
+
 interface Props {
   data: TrendsResponse | null
   granularity: 'day' | 'month'
@@ -53,8 +59,9 @@ export function TrendChart({ data, granularity, onGranularityChange, currency }:
       </div>
 
       {hasData ? (
+        <div className="overflow-hidden">
         <ResponsiveContainer width="100%" height={180}>
-          <AreaChart data={data!.data} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
+          <AreaChart data={data!.data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#111827" stopOpacity={0.12} />
@@ -71,10 +78,11 @@ export function TrendChart({ data, granularity, onGranularityChange, currency }:
               interval="preserveStartEnd"
             />
             <YAxis
+              width={40}
               tick={{ fontSize: 10, fill: '#9CA3AF' }}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v) => formatCurrency(v, currency).replace(/\.00$/, '')}
+              tickFormatter={compactNumber}
             />
             <Tooltip
               formatter={(value) => [formatCurrency(Number(value), currency), 'Spent']}
@@ -97,6 +105,7 @@ export function TrendChart({ data, granularity, onGranularityChange, currency }:
             />
           </AreaChart>
         </ResponsiveContainer>
+        </div>
       ) : (
         <div className="h-44 flex items-center justify-center text-sm text-gray-400">
           No trend data

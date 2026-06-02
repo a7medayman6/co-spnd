@@ -12,6 +12,12 @@ import type { CategoryTrendsResponse } from '../../types'
 import { formatCurrency } from '../../utils/date'
 import { Card } from '../../components/ui/Card'
 
+function compactNumber(v: number): string {
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}k`
+  return String(Math.round(v))
+}
+
 interface Props {
   data: CategoryTrendsResponse | null
   currency: string
@@ -38,8 +44,9 @@ export function CategoryTrendChart({ data, currency }: Props) {
       <p className="text-xs font-bold tracking-[0.12em] uppercase text-gray-400 mb-4">
         Category trend
       </p>
+      <div className="overflow-hidden">
       <ResponsiveContainer width="100%" height={180}>
-        <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
+        <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
           <XAxis
             dataKey="month"
@@ -48,10 +55,11 @@ export function CategoryTrendChart({ data, currency }: Props) {
             axisLine={false}
           />
           <YAxis
+            width={40}
             tick={{ fontSize: 10, fill: '#9CA3AF' }}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(v) => formatCurrency(v, currency).replace(/\.00$/, '')}
+            tickFormatter={compactNumber}
           />
           <Tooltip
             formatter={(value, name) => [formatCurrency(Number(value), currency), name]}
@@ -78,6 +86,7 @@ export function CategoryTrendChart({ data, currency }: Props) {
           ))}
         </BarChart>
       </ResponsiveContainer>
+      </div>
     </Card>
   )
 }
