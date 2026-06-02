@@ -3,7 +3,7 @@
   <h1><a href="https://co-spnd-web.vercel.app/">Co-Spnd</a></h1>
   <p>Minimalist shared expense tracking for groups</p>
 
-  🌐 **[Live App](https://co-spnd-web.vercel.app/)**
+  🌐 **[Live App](https://co-spnd.vercel.app/)**
 
   [![GitHub stars](https://img.shields.io/github/stars/a7medayman6/co-spnd?style=flat-square&logo=github&color=863bff)](https://github.com/a7medayman6/co-spnd/stargazers)
   [![GitHub forks](https://img.shields.io/github/forks/a7medayman6/co-spnd?style=flat-square&logo=github&color=863bff)](https://github.com/a7medayman6/co-spnd/network)
