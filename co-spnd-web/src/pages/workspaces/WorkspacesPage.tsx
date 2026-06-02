@@ -4,6 +4,7 @@ import { BarChart3, Plus, Users, LogOut, ChevronLeft, ChevronRight, Trash2 } fro
 import { workspacesService } from '../../services/workspaces.service'
 import { analyticsService } from '../../services/analytics.service'
 import { useAuth } from '../../hooks/useAuth'
+import { cacheGet, cacheSet, cacheInvalidate } from '../../utils/cache'
 import type { UserAnalytics, Workspace } from '../../types'
 import { formatCurrency, getMonthLabel, getMonthRange } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
@@ -216,18 +217,21 @@ export function WorkspacesPage() {
   const monthLabel = getMonthLabel(currentDate)
 
   useEffect(() => {
-    workspacesService
-      .list()
-      .then(setWorkspaces)
+    const cached = cacheGet<Workspace[]>('workspaces')
+    if (cached) { setWorkspaces(cached); setIsLoading(false) }
+    workspacesService.list()
+      .then(ws => { setWorkspaces(ws); cacheSet('workspaces', ws) })
       .catch(() => {})
       .finally(() => setIsLoading(false))
   }, [])
 
   useEffect(() => {
-    analyticsService
-      .getMine(from, to)
-      .then(setAnalytics)
-      .catch(() => setAnalytics(null))
+    const key = `analytics:me:${from}:${to}`
+    const cached = cacheGet<UserAnalytics>(key)
+    if (cached) setAnalytics(cached)
+    analyticsService.getMine(from, to)
+      .then(a => { setAnalytics(a); cacheSet(key, a) })
+      .catch(() => {})
   }, [from, to])
 
   async function handleCreate() {
@@ -236,7 +240,11 @@ export function WorkspacesPage() {
     setCreateError('')
     try {
       const ws = await workspacesService.create(name.trim(), currency)
-      setWorkspaces((prev) => [ws, ...prev])
+      setWorkspaces((prev) => {
+        const next = [ws, ...prev]
+        cacheSet('workspaces', next)
+        return next
+      })
       setShowCreate(false)
       setName('')
       setCurrency('USD')
@@ -261,7 +269,12 @@ export function WorkspacesPage() {
     setLeaveError('')
     try {
       await workspacesService.leave(leaveTarget.id)
-      setWorkspaces((prev) => prev.filter((w) => w.id !== leaveTarget.id))
+      setWorkspaces((prev) => {
+        const next = prev.filter((w) => w.id !== leaveTarget.id)
+        cacheSet('workspaces', next)
+        return next
+      })
+      cacheInvalidate('analytics:me:')
       setLeaveTarget(null)
     } catch {
       setLeaveError('Something went wrong. Please try again.')

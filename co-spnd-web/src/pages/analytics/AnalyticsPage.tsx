@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { analyticsService } from '../../services/analytics.service'
 import { workspacesService } from '../../services/workspaces.service'
+import { cacheGet, cacheSet } from '../../utils/cache'
 import type {
   Analytics,
   Workspace,
@@ -57,7 +58,6 @@ export function AnalyticsPage() {
 
   const load = useCallback(async () => {
     if (!workspaceId) return
-    setIsLoading(true)
     try {
       const [data, wsList, topData, compData, catData, pmData] = await Promise.all([
         analyticsService.get(workspaceId, from, to),
@@ -67,6 +67,12 @@ export function AnalyticsPage() {
         analyticsService.getCategoryTrends(workspaceId, from, to),
         analyticsService.getPaymentMethodAnalytics(workspaceId, from, to),
       ])
+      cacheSet(`workspace:${workspaceId}:analytics:${from}:${to}`, data)
+      cacheSet('workspaces', wsList)
+      cacheSet(`workspace:${workspaceId}:analytics:top:${from}:${to}`, topData)
+      cacheSet(`workspace:${workspaceId}:analytics:comparison`, compData)
+      cacheSet(`workspace:${workspaceId}:analytics:category-trends:${from}:${to}`, catData)
+      cacheSet(`workspace:${workspaceId}:analytics:payment-methods:${from}:${to}`, pmData)
       setAnalytics(data)
       setWorkspace(wsList.find((w) => w.id === workspaceId) ?? null)
       setTopExpenses(topData)
@@ -86,17 +92,39 @@ export function AnalyticsPage() {
 
   const loadTrends = useCallback(async () => {
     if (!workspaceId) return
+    const key = `workspace:${workspaceId}:analytics:trends:${granularity}:${from}:${to}`
+    const cached = cacheGet<TrendsResponse>(key)
+    if (cached) setTrends(cached)
     try {
       const trendsData = await analyticsService.getTrends(workspaceId, granularity, from, to)
+      cacheSet(key, trendsData)
       setTrends(trendsData)
     } catch {
-      setTrends(null)
+      if (!cached) setTrends(null)
     }
   }, [workspaceId, from, to, granularity])
 
   useEffect(() => {
+    if (!workspaceId) return
+    const cachedAnalytics = cacheGet<Analytics>(`workspace:${workspaceId}:analytics:${from}:${to}`)
+    const cachedWs = cacheGet<Workspace[]>('workspaces')
+    if (cachedAnalytics && cachedWs) {
+      setAnalytics(cachedAnalytics)
+      setWorkspace(cachedWs.find((w) => w.id === workspaceId) ?? null)
+      setIsLoading(false)
+      const cachedTop = cacheGet<TopExpensesResponse>(`workspace:${workspaceId}:analytics:top:${from}:${to}`)
+      const cachedComp = cacheGet<ComparisonResponse>(`workspace:${workspaceId}:analytics:comparison`)
+      const cachedCat = cacheGet<CategoryTrendsResponse>(`workspace:${workspaceId}:analytics:category-trends:${from}:${to}`)
+      const cachedPm = cacheGet<PaymentMethodAnalyticsResponse>(`workspace:${workspaceId}:analytics:payment-methods:${from}:${to}`)
+      if (cachedTop) setTopExpenses(cachedTop)
+      if (cachedComp) setComparison(cachedComp)
+      if (cachedCat) setCategoryTrends(cachedCat)
+      if (cachedPm) setPaymentMethodData(cachedPm)
+    } else {
+      setIsLoading(true)
+    }
     load()
-  }, [load])
+  }, [load, workspaceId, from, to])
 
   useEffect(() => {
     loadTrends()

@@ -4,6 +4,7 @@ import { UserPlus, Users, CheckCircle2, Wallet, Pencil, Check, X, Plus } from 'l
 import { workspacesService } from '../../services/workspaces.service'
 import { analyticsService } from '../../services/analytics.service'
 import { useAuth } from '../../hooks/useAuth'
+import { cacheGet, cacheSet, cacheInvalidate } from '../../utils/cache'
 import type { WorkspaceMember, SplitEntry, BalanceEntry, Analytics, Workspace } from '../../types'
 import { formatCurrency, getMonthRange } from '../../utils/date'
 import { getBudget, setBudget, clearBudget } from '../../utils/budget'
@@ -69,6 +70,10 @@ export function MembersPage() {
         workspacesService.list(),
         workspacesService.getCategories(workspaceId),
       ])
+      cacheSet(`workspace:${workspaceId}:members`, membersData)
+      cacheSet('workspaces', workspaces)
+      cacheSet(`workspace:${workspaceId}:categories`, categoriesData)
+      cacheSet(`workspace:${workspaceId}:analytics:${from}:${to}`, analyticsData)
       setMembers(membersData)
       setSplitConfig(splitData)
       setAnalytics(analyticsData)
@@ -79,12 +84,31 @@ export function MembersPage() {
       setCustomCategories(categoriesData)
     } catch {
       setIsError(true)
+    } finally {
+      setIsLoading(false)
     }
   }, [workspaceId, user?.id])
 
   useEffect(() => {
-    load().finally(() => setIsLoading(false))
-  }, [load])
+    if (!workspaceId) return
+    const now = new Date()
+    const { from, to } = getMonthRange(now)
+    const cachedMembers = cacheGet<WorkspaceMember[]>(`workspace:${workspaceId}:members`)
+    const cachedWs = cacheGet<Workspace[]>('workspaces')
+    if (cachedMembers && cachedWs) {
+      const ws = cachedWs.find((w) => w.id === workspaceId) ?? null
+      setMembers(cachedMembers)
+      setWorkspace(ws)
+      setCurrency(ws?.currency ?? 'USD')
+      setIsCreator(ws?.createdBy?.toString() === user?.id)
+      const cachedAnalytics = cacheGet<Analytics>(`workspace:${workspaceId}:analytics:${from}:${to}`)
+      const cachedCats = cacheGet<string[]>(`workspace:${workspaceId}:categories`)
+      if (cachedAnalytics) setAnalytics(cachedAnalytics)
+      if (cachedCats) setCustomCategories(cachedCats)
+      setIsLoading(false)
+    }
+    load()
+  }, [load, workspaceId, user?.id])
 
   useEffect(() => {
     if (workspaceId) setBudgetState(getBudget(workspaceId))
@@ -103,7 +127,11 @@ export function MembersPage() {
     setNameError('')
     try {
       const updated = await workspacesService.updateName(workspaceId, nameInput.trim())
-      setWorkspace((w) => w ? { ...w, name: updated.name } : w)
+      setWorkspace((w) => {
+        const next = w ? { ...w, name: updated.name } : w
+        if (next) cacheInvalidate('workspaces')
+        return next
+      })
       setEditingName(false)
     } catch {
       setNameError('Failed to save. Try again.')
@@ -195,6 +223,7 @@ export function MembersPage() {
         workspacesService.getMembers(workspaceId),
         workspacesService.getSplittingConfig(workspaceId),
       ])
+      cacheSet(`workspace:${workspaceId}:members`, membersData)
       setMembers(membersData)
       setSplitConfig(splitData)
     } catch {
@@ -217,6 +246,7 @@ export function MembersPage() {
     setCategoryLoading(true)
     try {
       const updated = await workspacesService.updateCategories(workspaceId, [trimmed], [])
+      cacheSet(`workspace:${workspaceId}:categories`, updated)
       setCustomCategories(updated)
       setNewCategoryInput('')
       setAddingCategory(false)
@@ -231,6 +261,7 @@ export function MembersPage() {
     if (!workspaceId) return
     try {
       const updated = await workspacesService.updateCategories(workspaceId, [], [cat])
+      cacheSet(`workspace:${workspaceId}:categories`, updated)
       setCustomCategories(updated)
     } catch {
       // silently ignore

@@ -10,6 +10,7 @@ import { Input } from '../../components/ui/Input'
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { toInputDateValue } from '../../utils/date'
 import { parseMessage, getParserKeywords } from '../../utils/messageParser'
+import { cacheGet, cacheSet } from '../../utils/cache'
 
 interface AddTransactionSheetProps {
   isOpen: boolean
@@ -63,8 +64,18 @@ export function AddTransactionSheet({
   useEffect(() => {
     if (isOpen && user) {
       setSpenderId(user.id)
-      workspacesService.getMembers(workspaceId).then(setMembers).catch(() => {})
-      workspacesService.getCategories(workspaceId).then(setCustomCategories).catch(() => {})
+
+      const cachedMembers = cacheGet<WorkspaceMember[]>(`workspace:${workspaceId}:members`)
+      if (cachedMembers) setMembers(cachedMembers)
+      workspacesService.getMembers(workspaceId)
+        .then(m => { setMembers(m); cacheSet(`workspace:${workspaceId}:members`, m) })
+        .catch(() => {})
+
+      const cachedCats = cacheGet<string[]>(`workspace:${workspaceId}:categories`)
+      if (cachedCats) setCustomCategories(cachedCats)
+      workspacesService.getCategories(workspaceId)
+        .then(c => { setCustomCategories(c); cacheSet(`workspace:${workspaceId}:categories`, c) })
+        .catch(() => {})
 
       const twoMonthsAgo = new Date()
       twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2)
@@ -192,6 +203,7 @@ export function AddTransactionSheet({
     setSavingCategory(true)
     try {
       const updated = await workspacesService.updateCategories(workspaceId, [trimmed], [])
+      cacheSet(`workspace:${workspaceId}:categories`, updated)
       setCustomCategories(updated)
       setCategory(trimmed)
     } catch {
