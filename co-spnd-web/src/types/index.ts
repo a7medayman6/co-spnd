@@ -36,6 +36,7 @@ export interface Transaction {
   spenderName?: string
   createdBy: string
   workspaceId: string
+  paymentMethod?: 'CASH' | 'VISA'
 }
 
 export interface CreateTransactionDto {
@@ -44,6 +45,7 @@ export interface CreateTransactionDto {
   description?: string
   date?: string
   spenderId?: string
+  paymentMethod?: 'CASH' | 'VISA'
 }
 
 export interface UpdateTransactionDto {
@@ -52,6 +54,7 @@ export interface UpdateTransactionDto {
   description?: string
   date?: string
   spenderId?: string
+  paymentMethod?: 'CASH' | 'VISA'
 }
 
 export interface Analytics {

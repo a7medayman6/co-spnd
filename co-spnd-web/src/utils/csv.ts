@@ -5,7 +5,7 @@ export function exportTransactionsToCsv(
   currency: string,
   filename: string,
 ): void {
-  const header = ['Date', 'Amount', 'Currency', 'Category', 'Description', 'Spender']
+  const header = ['Date', 'Amount', 'Currency', 'Category', 'Description', 'Spender', 'PaymentMethod']
   const rows = transactions.map((t) => [
     t.date.slice(0, 10),
     t.amount.toString(),
@@ -13,6 +13,7 @@ export function exportTransactionsToCsv(
     t.category,
     t.description ?? '',
     t.spenderName ?? '',
+    t.paymentMethod ?? 'CASH',
   ])
 
   const csv = [header, ...rows]
@@ -35,6 +36,7 @@ export interface ParsedCsvRow {
   description: string
   amount: number
   category: string
+  paymentMethod?: 'CASH' | 'VISA'
 }
 
 export interface CsvParseError {
@@ -85,6 +87,7 @@ export function parseImportCsv(text: string): CsvParseResult {
   const descIdx = colIndex('description')
   const amountIdx = colIndex('amount')
   const categoryIdx = colIndex('category')
+  const paymentMethodIdx = colIndex('paymentmethod')
 
   if (dateIdx === -1 || amountIdx === -1 || categoryIdx === -1) {
     return {
@@ -104,6 +107,7 @@ export function parseImportCsv(text: string): CsvParseResult {
     const rawDate = cells[dateIdx] ?? ''
     const rawCategory = cells[categoryIdx] ?? ''
     const rawDescription = descIdx !== -1 ? (cells[descIdx] ?? '') : ''
+    const rawPaymentMethod = paymentMethodIdx !== -1 ? (cells[paymentMethodIdx] ?? '') : ''
 
     const amount = parseFloat(rawAmount)
     if (isNaN(amount) || amount <= 0) {
@@ -129,7 +133,11 @@ export function parseImportCsv(text: string): CsvParseResult {
     // Skip rows with 'null' description (exported as string "null")
     const description = rawDescription === 'null' ? '' : rawDescription.trim()
 
-    rows.push({ date, description, amount, category })
+    const pm = rawPaymentMethod.trim().toUpperCase()
+    const paymentMethod: 'CASH' | 'VISA' | undefined =
+      pm === 'VISA' ? 'VISA' : pm === 'CASH' ? 'CASH' : undefined
+
+    rows.push({ date, description, amount, category, paymentMethod })
   }
 
   return { rows, errors }
