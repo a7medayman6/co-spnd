@@ -67,6 +67,8 @@ export function TransactionsPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [filterCategory, setFilterCategory] = useState('')
   const [filterSpenderId, setFilterSpenderId] = useState('')
+  const [filterDate, setFilterDate] = useState('')
+  const [filterDescription, setFilterDescription] = useState('')
   const [pasteMode, setPasteMode] = useState(false)
   const [customCategories, setCustomCategories] = useState<string[]>([])
   const [importing, setImporting] = useState(false)
@@ -277,10 +279,22 @@ export function TransactionsPage() {
   const filteredTransactions = transactions.filter((t) => {
     if (filterCategory && t.category !== filterCategory) return false
     if (filterSpenderId && t.spenderId !== filterSpenderId) return false
+    if (filterDate) {
+      const txDay = new Date(t.date).toISOString().slice(0, 10)
+      if (txDay !== filterDate) return false
+    }
+    if (filterDescription) {
+      const q = filterDescription.toLowerCase()
+      if (!t.description?.toLowerCase().includes(q)) return false
+    }
     return true
   })
 
-  const activeFilterCount = (filterCategory ? 1 : 0) + (filterSpenderId ? 1 : 0)
+  const activeFilterCount =
+    (filterCategory ? 1 : 0) +
+    (filterSpenderId ? 1 : 0) +
+    (filterDate ? 1 : 0) +
+    (filterDescription ? 1 : 0)
 
   const total = filteredTransactions.reduce((sum, t) => sum + t.amount, 0)
   const currency = workspace?.currency ?? 'USD'
@@ -377,7 +391,7 @@ export function TransactionsPage() {
               <span className="text-xs font-bold tracking-[0.1em] uppercase text-[#B5ADA4]">Filters</span>
               {activeFilterCount > 0 && (
                 <button
-                  onClick={() => { setFilterCategory(''); setFilterSpenderId('') }}
+                  onClick={() => { setFilterCategory(''); setFilterSpenderId(''); setFilterDate(''); setFilterDescription('') }}
                   className="flex items-center gap-1 text-xs font-semibold text-[#8C8479] hover:text-[#0E0C0A] transition-colors"
                 >
                   <X size={12} /> Clear all
@@ -410,6 +424,25 @@ export function TransactionsPage() {
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
                 </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-[#8C8479]">Date</label>
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#F9F8F5] border border-[#EDE9E1] rounded-xl text-[#0E0C0A] text-sm outline-none focus:border-gray-400 transition-all"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-[#8C8479]">Description</label>
+                <input
+                  type="text"
+                  value={filterDescription}
+                  onChange={(e) => setFilterDescription(e.target.value)}
+                  placeholder="Search…"
+                  className="w-full px-3 py-2 bg-[#F9F8F5] border border-[#EDE9E1] rounded-xl text-[#0E0C0A] text-sm outline-none focus:border-gray-400 transition-all placeholder:text-gray-400"
+                />
               </div>
             </div>
           </div>
