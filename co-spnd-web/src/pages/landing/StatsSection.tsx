@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Users, Layers, ArrowLeftRight, Coins } from 'lucide-react'
-import { fetchPlatformStats, PlatformStats } from '../../services/stats.service'
+import { fetchPlatformStats, type PlatformStats } from '../../services/stats.service'
+
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n)
