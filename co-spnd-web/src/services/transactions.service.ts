@@ -6,6 +6,7 @@ export interface ImportTransactionItem {
   category: string
   description?: string
   date?: string
+  paymentMethod?: 'CASH' | 'VISA'
 }
 
 export interface ImportResult {

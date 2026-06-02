@@ -146,6 +146,7 @@ export function TransactionsPage() {
       description: tx.description ?? '',
       date: toInputDateValue(tx.date),
       spenderId: tx.spenderId,
+      paymentMethod: tx.paymentMethod ?? 'CASH',
     })
   }
 
@@ -213,6 +214,7 @@ export function TransactionsPage() {
           category: r.category,
           description: r.description || undefined,
           date: r.date,
+          paymentMethod: r.paymentMethod,
         })),
       )
 
@@ -534,6 +536,25 @@ export function TransactionsPage() {
             value={editForm.date ?? ''}
             onChange={(e) => setEditForm((f) => ({ ...f, date: e.target.value }))}
           />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-600 tracking-tight">Payment</label>
+            <div className="flex bg-gray-100 rounded-2xl p-1 gap-1">
+              {(['CASH', 'VISA'] as const).map((pm) => (
+                <button
+                  key={pm}
+                  type="button"
+                  onClick={() => setEditForm((f) => ({ ...f, paymentMethod: pm }))}
+                  className={`flex-1 py-2 text-sm font-semibold rounded-xl transition-all ${
+                    (editForm.paymentMethod ?? 'CASH') === pm
+                      ? 'bg-white text-gray-950 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {pm === 'CASH' ? 'Cash' : 'Visa'}
+                </button>
+              ))}
+            </div>
+          </div>
           {members.length > 1 && (
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-gray-600 tracking-tight">Paid by</label>

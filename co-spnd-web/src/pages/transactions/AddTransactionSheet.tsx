@@ -34,11 +34,14 @@ export function AddTransactionSheet({
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(toInputDateValue())
   const [spenderId, setSpenderId] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'VISA'>('CASH')
   const [members, setMembers] = useState<WorkspaceMember[]>([])
   const [customCategories, setCustomCategories] = useState<string[]>([])
   const [showMore, setShowMore] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [recentDescriptions, setRecentDescriptions] = useState<string[]>([])
+  const [descSuggestions, setDescSuggestions] = useState<string[]>([])
 
   // Inline new category creation
   const [addingCategory, setAddingCategory] = useState(false)
@@ -62,6 +65,25 @@ export function AddTransactionSheet({
       setSpenderId(user.id)
       workspacesService.getMembers(workspaceId).then(setMembers).catch(() => {})
       workspacesService.getCategories(workspaceId).then(setCustomCategories).catch(() => {})
+
+      const twoMonthsAgo = new Date()
+      twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2)
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const from = `${twoMonthsAgo.getFullYear()}-${pad(twoMonthsAgo.getMonth() + 1)}-01`
+      transactionsService.list(workspaceId, from).then((txs) => {
+        const seen = new Set<string>()
+        const descs: string[] = []
+        txs.forEach((tx) => {
+          if (tx.description) {
+            const key = tx.description.toLowerCase()
+            if (!seen.has(key)) {
+              seen.add(key)
+              descs.push(tx.description)
+            }
+          }
+        })
+        setRecentDescriptions(descs)
+      }).catch(() => {})
     }
   }, [isOpen, workspaceId, user])
 
@@ -111,12 +133,26 @@ export function AddTransactionSheet({
     }
   }
 
+  function handleDescriptionChange(value: string) {
+    setDescription(value)
+    if (!value.trim()) {
+      setDescSuggestions([])
+      return
+    }
+    const lower = value.toLowerCase()
+    const matches = recentDescriptions
+      .filter((d) => d.toLowerCase().startsWith(lower) && d.toLowerCase() !== lower)
+      .slice(0, 5)
+    setDescSuggestions(matches)
+  }
+
   function clearParsed() {
     setParsedFrom(false)
     setIsCreditWarning(false)
     setAmount('')
     setCategory(CATEGORIES[0])
     setDescription('')
+    setDescSuggestions([])
     setDate(toInputDateValue())
   }
 
@@ -124,8 +160,10 @@ export function AddTransactionSheet({
     setAmount('')
     setCategory(CATEGORIES[0])
     setDescription('')
+    setDescSuggestions([])
     setDate(toInputDateValue())
     setSpenderId(user?.id ?? '')
+    setPaymentMethod('CASH')
     setShowMore(false)
     setError('')
     setParsedFrom(false)
@@ -181,6 +219,7 @@ export function AddTransactionSheet({
         description: description.trim() || undefined,
         date,
         spenderId: spenderId || undefined,
+        paymentMethod,
       })
       onAdded(tx)
       handleClose()
@@ -374,6 +413,29 @@ export function AddTransactionSheet({
           </div>
         </div>
 
+        {/* ── Payment method ──────────────────────────────────────── */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold tracking-[0.12em] uppercase text-gray-400">
+            Payment
+          </label>
+          <div className="flex bg-gray-100 rounded-2xl p-1 gap-1">
+            {(['CASH', 'VISA'] as const).map((pm) => (
+              <button
+                key={pm}
+                type="button"
+                onClick={() => setPaymentMethod(pm)}
+                className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all active:scale-95 ${
+                  paymentMethod === pm
+                    ? 'bg-white text-gray-950 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {pm === 'CASH' ? 'Cash' : 'Visa'}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* ── More details ────────────────────────────────────────── */}
         <button
           type="button"
@@ -386,13 +448,29 @@ export function AddTransactionSheet({
 
         {showMore && (
           <div className="flex flex-col gap-4 pt-1 border-t border-gray-100">
-            <Input
-              ref={descriptionRef}
-              label="Description"
-              placeholder="What was this for?"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+            <div className="flex flex-col gap-1.5">
+              <Input
+                ref={descriptionRef}
+                label="Description"
+                placeholder="What was this for?"
+                value={description}
+                onChange={(e) => handleDescriptionChange(e.target.value)}
+              />
+              {descSuggestions.length > 0 && (
+                <div className="flex gap-1.5 flex-wrap">
+                  {descSuggestions.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => { setDescription(s); setDescSuggestions([]) }}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full hover:bg-gray-200 transition-colors active:scale-95"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <Input
               label="Date"
               type="date"
