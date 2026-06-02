@@ -4,6 +4,7 @@ import { Star, ArrowRight, Zap, Users, BarChart3, Scale, Check, TrendingUp, Uten
 import { Logo } from '../../components/ui/Logo'
 import { Button } from '../../components/ui/Button'
 import { useAuth } from '../../hooks/useAuth'
+import { StatsSection } from './StatsSection'
 
 const categories = [
   { label: 'Food', icon: <Utensils size={12} />, bar: 72, amount: '€312' },
@@ -325,6 +326,9 @@ export function LandingPage() {
       <section className="max-w-4xl mx-auto px-6 pb-20">
         <AppPreview />
       </section>
+
+      {/* ── Stats ──────────────────────────────────────────── */}
+      <StatsSection />
 
       {/* ── Features ───────────────────────────────────────── */}
       <section className="bg-white border-y border-[#EDE9E1]">
