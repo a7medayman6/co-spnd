@@ -229,7 +229,7 @@ export function AnalyticsPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value) => [formatCurrency(Number(value), currency), '']}
+                    formatter={(value, name: string) => [formatCurrency(Number(value), currency), name]}
                     contentStyle={{
                       borderRadius: '12px',
                       border: '1px solid #F3F4F6',
