@@ -153,7 +153,7 @@ export const CATEGORIES = [
   'Food',
   'Groceries',
   'Takeaway',
-  'Transportationation',
+  'Transportation',
   'Accommodation',
   'Entertainment',
   'Shopping',
