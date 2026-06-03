@@ -137,7 +137,7 @@ export function AnalyticsPage() {
   const hasData = analytics && analytics.total > 0
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-surface overflow-x-hidden">
       {/* Header */}
       <div className="px-5 pt-5 lg:pt-10 pb-5">
         <p className="text-xs font-bold tracking-[0.12em] uppercase text-[#B5ADA4]">
