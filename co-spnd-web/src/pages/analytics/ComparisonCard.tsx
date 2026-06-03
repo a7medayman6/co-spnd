@@ -26,22 +26,22 @@ export function ComparisonCard({ data, currency }: Props) {
       <p className="text-xs font-bold tracking-[0.12em] uppercase text-gray-400 mb-3">
         vs Last Month
       </p>
-      <div className="flex items-center justify-between gap-4">
-        <div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 shrink">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">This month</p>
-          <p className="font-money text-xl font-semibold text-gray-950">
+          <p className="font-money text-base font-semibold text-gray-950 truncate">
             {formatCurrency(data.current.total, currency)}
           </p>
         </div>
 
-        <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}`}>
+        <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 ${badgeClass}`}>
           <Icon size={12} />
           {percentAbs !== null ? `${percentAbs}%` : '—'}
         </div>
 
-        <div className="text-right">
+        <div className="min-w-0 shrink text-right">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Last month</p>
-          <p className="font-money text-xl font-semibold text-gray-400">
+          <p className="font-money text-base font-semibold text-gray-400 truncate">
             {formatCurrency(data.previous.total, currency)}
           </p>
         </div>
