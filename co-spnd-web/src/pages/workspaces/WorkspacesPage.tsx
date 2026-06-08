@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { BarChart3, Plus, Users, LogOut, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { BarChart3, Plus, Users, LogOut, ChevronLeft, ChevronRight, Trash2, Star } from 'lucide-react'
 import { workspacesService } from '../../services/workspaces.service'
 import { analyticsService } from '../../services/analytics.service'
 import { useAuth } from '../../hooks/useAuth'
 import { cacheGet, cacheSet, cacheInvalidate } from '../../utils/cache'
+import { getDefaultWorkspace, setDefaultWorkspace, clearDefaultWorkspace } from '../../utils/defaultWorkspace'
 import type { UserAnalytics, Workspace } from '../../types'
 import { formatCurrency, getMonthLabel, getMonthRange } from '../../utils/date'
 import { Button } from '../../components/ui/Button'
@@ -198,6 +199,7 @@ function PersonalAnalytics({
 export function WorkspacesPage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [analytics, setAnalytics] = useState<UserAnalytics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -210,6 +212,7 @@ export function WorkspacesPage() {
   const [leaveTarget, setLeaveTarget] = useState<Workspace | null>(null)
   const [leaving, setLeaving] = useState(false)
   const [leaveError, setLeaveError] = useState('')
+  const [defaultWsId, setDefaultWsId] = useState<string | null>(() => getDefaultWorkspace())
 
   const currentDate = new Date()
   currentDate.setMonth(currentDate.getMonth() + monthOffset)
@@ -217,13 +220,38 @@ export function WorkspacesPage() {
   const monthLabel = getMonthLabel(currentDate)
 
   useEffect(() => {
+    const noRedirect = (location.state as { noRedirect?: boolean } | null)?.noRedirect === true
+    const defaultId = getDefaultWorkspace()
+
+    if (!noRedirect && defaultId) {
+      const cached = cacheGet<Workspace[]>('workspaces')
+      if (cached?.some((w) => w.id === defaultId)) {
+        navigate(`/workspaces/${defaultId}/transactions`, { replace: true })
+        return
+      }
+      workspacesService.list()
+        .then((ws) => {
+          cacheSet('workspaces', ws)
+          if (ws.some((w) => w.id === defaultId)) {
+            navigate(`/workspaces/${defaultId}/transactions`, { replace: true })
+          } else {
+            clearDefaultWorkspace()
+            setDefaultWsId(null)
+            setWorkspaces(ws)
+            setIsLoading(false)
+          }
+        })
+        .catch(() => setIsLoading(false))
+      return
+    }
+
     const cached = cacheGet<Workspace[]>('workspaces')
     if (cached) { setWorkspaces(cached); setIsLoading(false) }
     workspacesService.list()
-      .then(ws => { setWorkspaces(ws); cacheSet('workspaces', ws) })
+      .then((ws) => { setWorkspaces(ws); cacheSet('workspaces', ws) })
       .catch(() => {})
       .finally(() => setIsLoading(false))
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const key = `analytics:me:${from}:${to}`
@@ -263,12 +291,26 @@ export function WorkspacesPage() {
     setCreateError('')
   }
 
+  function handleToggleDefault(wsId: string) {
+    if (defaultWsId === wsId) {
+      clearDefaultWorkspace()
+      setDefaultWsId(null)
+    } else {
+      setDefaultWorkspace(wsId)
+      setDefaultWsId(wsId)
+    }
+  }
+
   async function handleLeave() {
     if (!leaveTarget) return
     setLeaving(true)
     setLeaveError('')
     try {
       await workspacesService.leave(leaveTarget.id)
+      if (defaultWsId === leaveTarget.id) {
+        clearDefaultWorkspace()
+        setDefaultWsId(null)
+      }
       setWorkspaces((prev) => {
         const next = prev.filter((w) => w.id !== leaveTarget.id)
         cacheSet('workspaces', next)
@@ -358,6 +400,17 @@ export function WorkspacesPage() {
                       </div>
                     </div>
                     <ChevronRight size={16} className="text-[#C8C2B9] shrink-0 ml-3" />
+                  </button>
+                  <button
+                    onClick={() => handleToggleDefault(ws.id)}
+                    className={`px-3 py-4 transition-colors border-l border-[#EDE9E1] self-stretch flex items-center ${
+                      defaultWsId === ws.id
+                        ? 'text-amber-400 bg-amber-50 hover:bg-amber-100'
+                        : 'text-[#C8C2B9] hover:text-amber-400 hover:bg-amber-50'
+                    }`}
+                    aria-label={defaultWsId === ws.id ? 'Remove default workspace' : 'Set as default workspace'}
+                  >
+                    <Star size={15} fill={defaultWsId === ws.id ? 'currentColor' : 'none'} />
                   </button>
                   <button
                     onClick={() => { setLeaveTarget(ws); setLeaveError('') }}
