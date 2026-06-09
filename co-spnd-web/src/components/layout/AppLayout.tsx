@@ -50,7 +50,7 @@ export function AppLayout() {
         <div className="px-3 pb-8">
           <div className="h-px bg-[#EDE9E1] mb-3" />
           <button
-            onClick={() => navigate('/workspaces')}
+            onClick={() => navigate('/workspaces', { state: { noRedirect: true } })}
             className="flex items-center gap-2 px-3 py-2.5 w-full rounded-xl text-[13px] font-semibold text-[#B5ADA4] hover:text-[#8C8479] hover:bg-[#F9F8F5] transition-all duration-150"
           >
             <ChevronLeft size={14} />
@@ -66,7 +66,7 @@ export function AppLayout() {
           <Logo size="sm" />
           {workspaceId && (
             <button
-              onClick={() => navigate('/workspaces')}
+              onClick={() => navigate('/workspaces', { state: { noRedirect: true } })}
               className="flex items-center gap-1.5 text-[13px] font-semibold text-[#8C8479] hover:text-[#0E0C0A] transition-colors"
             >
               <ChevronLeft size={15} strokeWidth={2.5} />

@@ -146,6 +146,10 @@ export function TransactionsPage() {
   }, [load, workspaceId, from, to])
 
   useEffect(() => {
+    if (workspaceId) setBudget(getBudget(workspaceId))
+  }, [workspaceId])
+
+  useEffect(() => {
     loadComparison()
   }, [loadComparison])
 
@@ -299,6 +303,13 @@ export function TransactionsPage() {
   const total = filteredTransactions.reduce((sum, t) => sum + t.amount, 0)
   const currency = workspace?.currency ?? 'USD'
 
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayTotal = isCurrentMonth
+    ? transactions
+        .filter((t) => new Date(t.date).toISOString().slice(0, 10) === todayStr)
+        .reduce((sum, t) => sum + t.amount, 0)
+    : 0
+
   const deltaLabel = (() => {
     if (deltaPercent === undefined || deltaPercent === null) return null
     const abs = Math.abs(deltaPercent)
@@ -330,6 +341,14 @@ export function TransactionsPage() {
                   {formatCurrency(total, currency)}
                 </span>
               </p>
+              {isCurrentMonth && todayTotal > 0 && (
+                <p className="text-sm text-[#8C8479] mt-0.5">
+                  Today:{' '}
+                  <span className="font-money font-semibold text-[#0E0C0A]">
+                    {formatCurrency(todayTotal, currency)}
+                  </span>
+                </p>
+              )}
               {deltaLabel && <div className="mt-0.5">{deltaLabel}</div>}
               {budget !== null && (
                 <BudgetBar spent={total} budget={budget} currency={currency} />
