@@ -134,6 +134,17 @@ export interface UserAnalytics {
   }>
 }
 
+export interface Notification {
+  id: string
+  type: 'workspace_invite' | 'transaction_added'
+  title: string
+  body: string
+  read: boolean
+  workspaceId?: string
+  transactionId?: string
+  createdAt: string
+}
+
 export interface SplitEntry {
   userId: string
   name: string

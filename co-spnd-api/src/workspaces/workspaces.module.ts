@@ -5,11 +5,13 @@ import { WorkspacesService } from './workspaces.service';
 import { WorkspacesController } from './workspaces.controller';
 import { WorkspaceMemberGuard } from './workspace-member.guard';
 import { UsersModule } from '../users/users.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Workspace.name, schema: WorkspaceSchema }]),
     UsersModule,
+    NotificationsModule,
   ],
   controllers: [WorkspacesController],
   providers: [WorkspacesService, WorkspaceMemberGuard],
