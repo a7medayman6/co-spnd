@@ -1,14 +1,14 @@
 import { useState, useCallback } from 'react'
 import { notificationsService } from '../services/notifications.service'
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function toApplicationServerKey(base64String: string): ArrayBuffer {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
   const rawData = window.atob(base64)
   const buffer = new ArrayBuffer(rawData.length)
-  const output = new Uint8Array(buffer)
-  for (let i = 0; i < rawData.length; i++) output[i] = rawData.charCodeAt(i)
-  return output
+  const view = new Uint8Array(buffer)
+  for (let i = 0; i < rawData.length; i++) view[i] = rawData.charCodeAt(i)
+  return buffer
 }
 
 const isSupported =
@@ -37,7 +37,7 @@ export function usePushNotifications() {
       const existing = await registration.pushManager.getSubscription()
       const pushSub = existing ?? (await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
+        applicationServerKey: toApplicationServerKey(publicKey),
       }))
 
       await notificationsService.subscribePush(pushSub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } })
