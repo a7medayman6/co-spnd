@@ -22,7 +22,7 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [pushLoading, setPushLoading] = useState(false)
   const navigate = useNavigate()
-  const intervalRef = useRef<ReturnType<typeof setInterval>>()
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
   const { permission, subscribe, unsubscribe, isSupported } = usePushNotifications()
 
   const load = useCallback(async () => {
