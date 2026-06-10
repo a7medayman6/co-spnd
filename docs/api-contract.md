@@ -421,15 +421,114 @@ Returns top 3 categories by total spend, broken down by month.
 
 ---
 
+## 6. Notifications
+
+### VAPID Public Key
+
+**GET** `/notifications/vapid-public-key`
+
+```json
+{ "publicKey": "BExampleVAPIDPublicKey..." }
+```
+
+Returns `null` if push is not configured on the server.
+
+---
+
+### Subscribe to Push
+
+**POST** `/notifications/subscribe`
+
+```json
+{ "endpoint": "https://...", "p256dh": "...", "auth": "..." }
+```
+
+```json
+{ "success": true }
+```
+
+---
+
+### Unsubscribe from Push
+
+**DELETE** `/notifications/subscribe`
+
+```json
+{ "endpoint": "https://..." }
+```
+
+```json
+{ "success": true }
+```
+
+---
+
+### Get Notifications
+
+**GET** `/notifications`
+
+Returns the authenticated user's notifications, newest first (max 50).
+
+```json
+[
+  {
+    "id": "notificationId",
+    "type": "workspace_invite",
+    "title": "You were added to \"Trip to Dubai\"",
+    "body": "Ahmed invited you to join the workspace",
+    "read": false,
+    "workspaceId": "workspaceId",
+    "transactionId": null,
+    "createdAt": "2026-01-30T12:00:00.000Z"
+  }
+]
+```
+
+Types:
+- `workspace_invite` — triggered when a user is invited to a workspace
+- `transaction_added` — triggered when a new transaction is created (sent to all workspace members except the creator)
+
+---
+
+### Mark Notification Read
+
+**PATCH** `/notifications/:id/read`
+
+```json
+{ "success": true }
+```
+
+---
+
+### Mark All Read
+
+**PATCH** `/notifications/read-all`
+
+```json
+{ "success": true }
+```
+
+---
+
+### Delete Notification
+
+**DELETE** `/notifications/:id`
+
+```json
+{ "success": true }
+```
+
+---
+
 ## Authorization Rules
 
 * User must belong to workspace
 * Transactions editable by creator only
+* Notifications scoped to the authenticated user only
 
 ---
 
 ## Out of Scope
 
 * Budgets
-* Notifications
 * Multi-currency per workspace

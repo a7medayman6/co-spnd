@@ -2,6 +2,7 @@ import { Outlet, NavLink, useParams, useNavigate } from 'react-router-dom'
 import { Receipt, BarChart2, Settings, User, ChevronLeft } from 'lucide-react'
 import { BottomNav } from './BottomNav'
 import { Logo } from '../ui/Logo'
+import { NotificationBell } from '../ui/NotificationBell'
 
 export function AppLayout() {
   const { workspaceId } = useParams<{ workspaceId: string }>()
@@ -20,8 +21,9 @@ export function AppLayout() {
     <div className="min-h-screen bg-surface flex">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:flex-col fixed inset-y-0 left-0 w-56 bg-white border-r border-[#EDE9E1] z-40">
-        <div className="px-5 pt-8 pb-7">
+        <div className="px-5 pt-8 pb-7 flex items-center justify-between">
           <Logo size="md" />
+          <NotificationBell />
         </div>
 
         <nav className="flex-1 px-3 space-y-px">
@@ -64,15 +66,18 @@ export function AppLayout() {
         {/* Mobile-only sticky top bar */}
         <div className="lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-[#EDE9E1] flex items-center justify-between px-5 h-14">
           <Logo size="sm" />
-          {workspaceId && (
-            <button
-              onClick={() => navigate('/workspaces', { state: { noRedirect: true } })}
-              className="flex items-center gap-1.5 text-[13px] font-semibold text-[#8C8479] hover:text-[#0E0C0A] transition-colors"
-            >
-              <ChevronLeft size={15} strokeWidth={2.5} />
-              Workspaces
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            {workspaceId && (
+              <button
+                onClick={() => navigate('/workspaces', { state: { noRedirect: true } })}
+                className="flex items-center gap-1.5 text-[13px] font-semibold text-[#8C8479] hover:text-[#0E0C0A] transition-colors"
+              >
+                <ChevronLeft size={15} strokeWidth={2.5} />
+                Workspaces
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="max-w-lg mx-auto lg:max-w-2xl min-h-screen">

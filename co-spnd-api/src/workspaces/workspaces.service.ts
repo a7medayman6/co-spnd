@@ -3,12 +3,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Workspace, WorkspaceDocument } from './workspace.schema';
 import { UsersService } from '../users/users.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class WorkspacesService {
   constructor(
     @InjectModel(Workspace.name) private workspaceModel: Model<WorkspaceDocument>,
     private usersService: UsersService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(name: string, currency: string, userId: string): Promise<WorkspaceDocument> {
@@ -102,7 +104,7 @@ export class WorkspacesService {
     return workspace.members.some((m) => m.toString() === userId);
   }
 
-  async inviteUser(workspaceId: string, email: string): Promise<boolean> {
+  async inviteUser(workspaceId: string, email: string, invitingUserId: string): Promise<boolean> {
     const user = await this.usersService.findOneByEmail(email);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -119,10 +121,20 @@ export class WorkspacesService {
     }
 
     workspace.members.push(user._id as Types.ObjectId);
-    // Add to splitting config with 0% initially (must be configured manually later)
     workspace.splittingConfig.push({ userId: user._id as Types.ObjectId, percentage: 0 });
-    
     await workspace.save();
+
+    const inviter = await this.usersService.findOneById(invitingUserId);
+    if (inviter) {
+      await this.notificationsService.create({
+        userId: user._id.toString(),
+        type: 'workspace_invite',
+        title: `You were added to "${workspace.name}"`,
+        body: `${inviter.name} invited you to join the workspace`,
+        workspaceId,
+      });
+    }
+
     return true;
   }
 

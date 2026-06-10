@@ -3,11 +3,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Transaction, TransactionDocument } from './transaction.schema';
 import { CreateTransactionDto, UpdateTransactionDto, ImportTransactionItemDto } from './transaction.dto';
+import { WorkspacesService } from '../workspaces/workspaces.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class TransactionsService {
   constructor(
     @InjectModel(Transaction.name) private transactionModel: Model<TransactionDocument>,
+    private workspacesService: WorkspacesService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(
@@ -33,7 +37,38 @@ export class TransactionsService {
       .populate('spenderId', '_id name email')
       .populate('createdBy', '_id name email')
       .exec();
+
+    this.notifyWorkspaceMembers(workspaceId, userId, saved._id.toString(), populated!).catch(() => {});
+
     return populated!;
+  }
+
+  private async notifyWorkspaceMembers(
+    workspaceId: string,
+    creatorId: string,
+    transactionId: string,
+    transaction: TransactionDocument,
+  ): Promise<void> {
+    const workspace = await this.workspacesService.findById(workspaceId);
+    if (!workspace) return;
+
+    const spender = (transaction as any).spenderId;
+    const spenderName: string = spender?.name ?? 'Someone';
+
+    const otherMembers = workspace.members.filter((m) => m.toString() !== creatorId);
+
+    await Promise.all(
+      otherMembers.map((memberId) =>
+        this.notificationsService.create({
+          userId: memberId.toString(),
+          type: 'transaction_added',
+          title: `New expense in ${workspace.name}`,
+          body: `${spenderName} · ${transaction.category} · ${workspace.currency} ${transaction.amount}`,
+          workspaceId,
+          transactionId,
+        }),
+      ),
+    );
   }
 
   async findByWorkspace(

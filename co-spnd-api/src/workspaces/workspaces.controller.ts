@@ -55,8 +55,12 @@ export class WorkspacesController {
 
   @Post(':workspaceId/invite')
   @UseGuards(WorkspaceMemberGuard)
-  async invite(@Param('workspaceId') workspaceId: string, @Body() inviteUserDto: InviteUserDto) {
-    await this.workspacesService.inviteUser(workspaceId, inviteUserDto.email);
+  async invite(
+    @Param('workspaceId') workspaceId: string,
+    @Request() req: any,
+    @Body() inviteUserDto: InviteUserDto,
+  ) {
+    await this.workspacesService.inviteUser(workspaceId, inviteUserDto.email, req.user.userId);
     return { success: true };
   }
 
