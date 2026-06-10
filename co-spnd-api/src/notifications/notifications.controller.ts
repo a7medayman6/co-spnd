@@ -1,11 +1,39 @@
-import { Controller, Get, Patch, Delete, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { IsString } from 'class-validator';
 import { NotificationsService } from './notifications.service';
+
+class PushSubscribeDto {
+  @IsString() endpoint: string;
+  @IsString() p256dh: string;
+  @IsString() auth: string;
+}
+
+class PushUnsubscribeDto {
+  @IsString() endpoint: string;
+}
 
 @Controller('notifications')
 @UseGuards(AuthGuard('jwt'))
 export class NotificationsController {
   constructor(private notificationsService: NotificationsService) {}
+
+  @Get('vapid-public-key')
+  getVapidPublicKey() {
+    return { publicKey: this.notificationsService.getVapidPublicKey() ?? null };
+  }
+
+  @Post('subscribe')
+  async subscribe(@Request() req: any, @Body() dto: PushSubscribeDto) {
+    await this.notificationsService.subscribe(req.user.userId, dto.endpoint, dto.p256dh, dto.auth);
+    return { success: true };
+  }
+
+  @Delete('subscribe')
+  async unsubscribe(@Request() req: any, @Body() dto: PushUnsubscribeDto) {
+    await this.notificationsService.unsubscribe(req.user.userId, dto.endpoint);
+    return { success: true };
+  }
 
   @Get()
   async findAll(@Request() req: any) {

@@ -423,6 +423,46 @@ Returns top 3 categories by total spend, broken down by month.
 
 ## 6. Notifications
 
+### VAPID Public Key
+
+**GET** `/notifications/vapid-public-key`
+
+```json
+{ "publicKey": "BExampleVAPIDPublicKey..." }
+```
+
+Returns `null` if push is not configured on the server.
+
+---
+
+### Subscribe to Push
+
+**POST** `/notifications/subscribe`
+
+```json
+{ "endpoint": "https://...", "p256dh": "...", "auth": "..." }
+```
+
+```json
+{ "success": true }
+```
+
+---
+
+### Unsubscribe from Push
+
+**DELETE** `/notifications/subscribe`
+
+```json
+{ "endpoint": "https://..." }
+```
+
+```json
+{ "success": true }
+```
+
+---
+
 ### Get Notifications
 
 **GET** `/notifications`
