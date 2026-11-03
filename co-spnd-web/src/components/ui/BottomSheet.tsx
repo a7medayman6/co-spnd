@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 
 interface BottomSheetProps {
   isOpen: boolean
@@ -8,17 +8,27 @@ interface BottomSheetProps {
 }
 
 export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetProps) {
+  // Keep the overlay mounted during the close animation, then remove it.
+  const [mounted, setMounted] = useState(isOpen)
+
+  useEffect(() => {
+    if (isOpen) {
+      setMounted(true)
+    } else {
+      const t = setTimeout(() => setMounted(false), 300)
+      return () => clearTimeout(t)
+    }
+  }, [isOpen])
+
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
+  if (!mounted) return null
+
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-end transition-all duration-300 ${
-        isOpen ? 'pointer-events-auto' : 'pointer-events-none'
-      }`}
-    >
+    <div className="fixed inset-0 z-50 flex items-end">
       <div
         className={`absolute inset-0 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0'
