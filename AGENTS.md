@@ -130,7 +130,6 @@ exactly.
 
 The following are OUT OF SCOPE:
 
-- Notifications
 - Budgets
 - Savings goals
 - Multi-currency workspaces

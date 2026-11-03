@@ -8,6 +8,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { StatsModule } from './stats/stats.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
@@ -29,6 +30,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     TransactionsModule,
     AnalyticsModule,
     StatsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
