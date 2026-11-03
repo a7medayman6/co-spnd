@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Receipt, Download, ChevronLeft, ChevronRight, SlidersHorizontal, X, Clipboard, Upload, CheckCircle2 } from 'lucide-react'
+import { Plus, Trash2, Pencil, Receipt, Download, ChevronLeft, ChevronRight, SlidersHorizontal, X, Clipboard, Upload, CheckCircle2, Layers } from 'lucide-react'
 import { transactionsService } from '../../services/transactions.service'
 import { workspacesService } from '../../services/workspaces.service'
 import { analyticsService } from '../../services/analytics.service'
@@ -18,6 +18,7 @@ import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { AddTransactionSheet } from './AddTransactionSheet'
+import { BulkAddTransactionsSheet } from './BulkAddTransactionsSheet'
 
 function BudgetBar({ spent, budget, currency }: { spent: number; budget: number; currency: string }) {
   const pct = Math.min((spent / budget) * 100, 100)
@@ -70,6 +71,7 @@ export function TransactionsPage() {
   const [filterDate, setFilterDate] = useState('')
   const [filterDescription, setFilterDescription] = useState('')
   const [pasteMode, setPasteMode] = useState(false)
+  const [showBulkAdd, setShowBulkAdd] = useState(false)
   const [customCategories, setCustomCategories] = useState<string[]>([])
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState<{ imported: number; errors: { row: number; message: string }[] } | null>(null)
@@ -166,6 +168,15 @@ export function TransactionsPage() {
     }
     cacheInvalidate(`workspace:${workspaceId ?? ''}:analytics:`)
     cacheInvalidate('analytics:me:')
+  }
+
+  function handleBulkAdded(count: number) {
+    if (count > 0) {
+      cacheInvalidate(`workspace:${workspaceId ?? ''}:txs:`)
+      cacheInvalidate(`workspace:${workspaceId ?? ''}:analytics:`)
+      cacheInvalidate('analytics:me:')
+      load()
+    }
   }
 
   function openEdit(tx: Transaction) {
@@ -557,6 +568,13 @@ export function TransactionsPage() {
           <Clipboard size={18} />
         </button>
         <button
+          onClick={() => setShowBulkAdd(true)}
+          className="w-12 h-12 bg-white border border-[#EDE9E1] text-[#0E7C5A] rounded-2xl shadow-md hover:bg-[#F0FFF8] active:scale-95 transition-all duration-150 flex items-center justify-center"
+          aria-label="Add multiple expenses"
+        >
+          <Layers size={18} />
+        </button>
+        <button
           onClick={() => { setPasteMode(false); setShowAdd(true) }}
           className="w-14 h-14 bg-[#0E0C0A] text-white rounded-2xl shadow-lg hover:bg-[#2A2724] active:scale-95 transition-all duration-150 flex items-center justify-center"
           aria-label="Add expense"
@@ -582,6 +600,15 @@ export function TransactionsPage() {
         currency={currency}
         onAdded={handleAdded}
         openWithPaste={pasteMode}
+      />
+
+      {/* Bulk add sheet */}
+      <BulkAddTransactionsSheet
+        isOpen={showBulkAdd}
+        onClose={() => setShowBulkAdd(false)}
+        workspaceId={workspaceId!}
+        currency={currency}
+        onAdded={handleBulkAdded}
       />
 
       {/* Edit modal */}
